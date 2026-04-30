@@ -1,0 +1,262 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:daksha/domain/taxonomy.dart';
+import 'package:daksha/domain/topic_classifier.dart';
+import 'package:daksha/domain/socratic_tools.dart';
+import 'package:daksha/inference/inference_engine.dart';
+import 'package:daksha/eval/eval_harness.dart';
+import 'package:daksha/eval/eval_fixtures.dart';
+
+class MockInferenceEngine extends Mock implements InferenceEngine {}
+
+// One fixture covering math/linear-equations
+const _mathFixture = EvalFixture(
+  id: 'math-01',
+  problemText: 'Solve for x: 2x + 4 = 10',
+  expectedSubject: 'math',
+  expectedSlug: 'linear-equations',
+  sampleCorrectAttempt: 'x = 3',
+  sampleIncorrectAttempt: 'x = 7',
+);
+
+final _mathTopic = const Topic(
+  subject: 'math',
+  slug: 'linear-equations',
+  displayName: 'Linear Equations',
+);
+
+EvalHarness _buildHarness(
+  MockInferenceEngine engine,
+  List<Topic> topics,
+) {
+  final classifier = TopicClassifier(engine: engine, topics: topics);
+  final socratic = SocraticService(engine);
+  return EvalHarness(
+    classifier: classifier,
+    socratic: socratic,
+    topics: topics,
+  );
+}
+
+/// Returns a stub answer function that dispatches based on prompt content.
+///
+/// [classifyJson]  – returned for classify calls (contain the slug list pattern)
+/// [openerJson]    – returned for opener calls
+/// [correctJson]   – returned for checkAttempt calls that include the correct attempt
+/// [incorrectJson] – returned for checkAttempt calls that include the incorrect attempt
+/// [hintJson]      – returned for hint calls
+Answer<Future<InferenceResponse>> _dispatchAnswer({
+  String? classifyJson,
+  String? openerJson,
+  String? correctJson,
+  String? incorrectJson,
+  String? hintJson,
+}) {
+  return (Invocation inv) async {
+    final req = inv.positionalArguments.first as InferenceRequest;
+    final prompt = req.prompt;
+
+    // Classify prompt contains "subject/topic" slug list
+    if (prompt.contains('math/linear-equations')) {
+      if (classifyJson == null) {
+        return const InferenceResponse.failure(error: 'classify disabled');
+      }
+      return InferenceResponse.success(text: classifyJson, tokensGenerated: 10);
+    }
+
+    // Hint prompt contains "Hint level:"
+    if (prompt.contains('Hint level:')) {
+      if (hintJson == null) {
+        return const InferenceResponse.failure(error: 'hint disabled');
+      }
+      return InferenceResponse.success(text: hintJson, tokensGenerated: 10);
+    }
+
+    // checkAttempt prompt contains "Student's answer:"
+    if (prompt.contains("Student's answer:")) {
+      if (prompt.contains(_mathFixture.sampleCorrectAttempt)) {
+        if (correctJson == null) {
+          return const InferenceResponse.failure(error: 'correct disabled');
+        }
+        return InferenceResponse.success(
+            text: correctJson, tokensGenerated: 10);
+      } else {
+        if (incorrectJson == null) {
+          return const InferenceResponse.failure(error: 'incorrect disabled');
+        }
+        return InferenceResponse.success(
+            text: incorrectJson, tokensGenerated: 10);
+      }
+    }
+
+    // opener prompt: "Ask one focused Socratic question"
+    if (openerJson == null) {
+      return const InferenceResponse.failure(error: 'opener disabled');
+    }
+    return InferenceResponse.success(text: openerJson, tokensGenerated: 10);
+  };
+}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(const InferenceRequest(prompt: 'test'));
+  });
+
+  group('EvalHarness', () {
+    late MockInferenceEngine engine;
+    late List<Topic> topics;
+
+    setUp(() {
+      engine = MockInferenceEngine();
+      topics = [_mathTopic];
+    });
+
+    // ── Test 1: classifyAccuracy is 1.0 when slug matches ───────────────────
+    test('classifyAccuracy is 1.0 when classify returns the expected slug',
+        () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          classifyJson:
+              '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+          openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
+          correctJson: '{"verdict":"correct","explanation":"Well done."}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"Not right."}',
+          hintJson: '{"hint":"Subtract 4 from both sides."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.total, equals(1));
+      expect(metrics.classifyHit, equals(1));
+      expect(metrics.classifyAccuracy, equals(1.0));
+    });
+
+    // ── Test 2: classifyHit is 0 when engine fails for classify ─────────────
+    test('classifyHit is 0 when classification returns null', () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          // classifyJson omitted → engine returns failure for classify
+          openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
+          correctJson: '{"verdict":"correct","explanation":"Well done."}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"Not right."}',
+          hintJson: '{"hint":"Subtract 4 from both sides."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.classifyHit, equals(0));
+    });
+
+    // ── Test 3: openerGenerated counts non-null openers ──────────────────────
+    test('openerGenerated is 1 when engine returns valid opener JSON', () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          classifyJson:
+              '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+          openerJson: '{"question":"What is the first step?","hint":"Move the constant."}',
+          correctJson: '{"verdict":"correct","explanation":"Yes!"}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"Nope."}',
+          hintJson: '{"hint":"Start with addition."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.openerGenerated, equals(1));
+    });
+
+    // ── Test 4: correctChecked increments when verdict == correct ────────────
+    test('correctChecked is 1 when correct attempt returns verdict correct',
+        () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          classifyJson:
+              '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+          openerJson: '{"question":"Think about x.","hint":"Isolate the variable."}',
+          correctJson: '{"verdict":"correct","explanation":"Exactly right."}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"Wrong."}',
+          hintJson: '{"hint":"Subtract 4."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.correctChecked, equals(1));
+    });
+
+    // ── Test 5: EvalMetrics.toString includes percentage ─────────────────────
+    test('toString contains correct percentage for classifyAccuracy', () {
+      const metrics = EvalMetrics(
+        total: 5,
+        classifyHit: 4,
+        openerGenerated: 5,
+        correctChecked: 4,
+        incorrectChecked: 5,
+        hintGenerated: 5,
+      );
+
+      expect(metrics.toString(), contains('80%'));
+    });
+
+    // ── Bonus: incorrectChecked increments for non-correct incorrect verdict ─
+    test('incorrectChecked is 1 when incorrect attempt returns verdict incorrect',
+        () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          classifyJson:
+              '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+          openerJson: '{"question":"Think.","hint":"Try again."}',
+          correctJson: '{"verdict":"correct","explanation":"Right."}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"Wrong."}',
+          hintJson: '{"hint":"Think harder."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.incorrectChecked, equals(1));
+    });
+
+    // ── Bonus: hintGenerated counts non-null hints ───────────────────────────
+    test('hintGenerated is 1 when engine returns valid hint JSON', () async {
+      when(() => engine.generate(any())).thenAnswer(
+        _dispatchAnswer(
+          classifyJson:
+              '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+          openerJson: '{"question":"Where to start?","hint":"The constant."}',
+          correctJson: '{"verdict":"correct","explanation":"Yes!"}',
+          incorrectJson: '{"verdict":"incorrect","explanation":"No."}',
+          hintJson: '{"hint":"Subtract 4 from both sides."}',
+        ),
+      );
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(fixtures: [_mathFixture]);
+
+      expect(metrics.hintGenerated, equals(1));
+    });
+
+    // ── Bonus: openerRate is 0.0 when total is 0 ─────────────────────────────
+    test('openerRate is 0.0 when total is 0', () {
+      const metrics = EvalMetrics(
+        total: 0,
+        classifyHit: 0,
+        openerGenerated: 0,
+        correctChecked: 0,
+        incorrectChecked: 0,
+        hintGenerated: 0,
+      );
+
+      expect(metrics.openerRate, equals(0.0));
+      expect(metrics.classifyAccuracy, equals(0.0));
+    });
+  });
+}
