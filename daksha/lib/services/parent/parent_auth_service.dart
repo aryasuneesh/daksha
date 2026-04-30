@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
@@ -153,7 +154,9 @@ class ParentAuthService {
       );
     }
 
-    final saltBytes = _fromHex(row.salt);
+    // Read salt from secure storage (authoritative) with DB fallback
+    final storedSaltHex = await _secureStorage.read(_saltKey) ?? row.salt;
+    final saltBytes = _fromHex(storedSaltHex);
     final hash = await _hashPin(pin, saltBytes);
     final correct = _constantTimeEquals(_toHex(hash), row.pinHash);
 
@@ -203,7 +206,7 @@ class ParentAuthService {
       iterations: 2,
       hashLength: 32,
     );
-    final secretKey = SecretKey(pin.codeUnits);
+    final secretKey = SecretKey(utf8.encode(pin));
     final result = await argon2.deriveKey(secretKey: secretKey, nonce: salt);
     return result.extractBytes();
   }
@@ -224,10 +227,12 @@ class ParentAuthService {
 
   /// Constant-time string comparison to prevent timing attacks.
   static bool _constantTimeEquals(String a, String b) {
-    if (a.length != b.length) return false;
-    var diff = 0;
-    for (var i = 0; i < a.length; i++) {
-      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    final len = a.length > b.length ? a.length : b.length;
+    var diff = a.length ^ b.length;
+    for (var i = 0; i < len; i++) {
+      final ca = i < a.length ? a.codeUnitAt(i) : 0;
+      final cb = i < b.length ? b.codeUnitAt(i) : 0;
+      diff |= ca ^ cb;
     }
     return diff == 0;
   }
