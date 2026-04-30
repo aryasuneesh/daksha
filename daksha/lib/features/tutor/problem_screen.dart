@@ -63,7 +63,7 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
     // Navigate to solved screen when solved
     ref.listen<TutorState>(tutorServiceProvider, (_, next) {
       if (next is TutorSolved && mounted) {
-        context.go('/');
+        context.go('/solved');
       }
     });
 
@@ -109,7 +109,10 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
               horizontal: DT.contentPad,
               vertical: DT.sm,
             ),
-            child: ProblemHeader(problemText: displayProblem),
+            child: ProblemHeader(
+              problemText: displayProblem,
+              label: topicName.isNotEmpty ? topicName : 'Problem',
+            ),
           ),
           // Chat area
           Expanded(
@@ -123,7 +126,7 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
             ),
           ),
           // Input row
-          _buildInputRow(),
+          _buildInputRow(tutorState),
         ],
       ),
     );
@@ -132,6 +135,9 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
   bool _canRequestHint(TutorState state) {
     return state is TutorAsking || state is TutorHinting;
   }
+
+  bool _canSubmitAttempt(TutorState state) =>
+      state is TutorAsking || state is TutorHinting;
 
   Widget _buildChatArea(TutorState state) {
     return ListView(
@@ -169,7 +175,7 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
           DakshaBubble(text: opener),
           const SizedBox(height: DT.sm),
         ],
-      TutorChecking(:final attempt, :final topic) => [
+      TutorChecking(:final attempt, topic: _) => [
           const DakshaBubble(
             text: 'What do you think? Try working it through.',
           ),
@@ -186,8 +192,6 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
               ),
             ),
           ),
-          // suppress unused variable warning — topic used only for type pattern
-          if (topic.subject.isEmpty) const SizedBox.shrink(),
         ],
       TutorHinting(:final hint, :final level) => [
           AmberCard(label: 'Hint $level', body: hint),
@@ -206,7 +210,8 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
     };
   }
 
-  Widget _buildInputRow() {
+  Widget _buildInputRow(TutorState state) {
+    final canSubmit = _canSubmitAttempt(state);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: DT.lg,
@@ -217,18 +222,19 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
+              enabled: canSubmit,
               decoration: const InputDecoration(hintText: 'Your answer...'),
-              onSubmitted: (_) => _onSend(),
+              onSubmitted: canSubmit ? (_) => _onSend() : null,
             ),
           ),
           const SizedBox(width: DT.sm),
           GestureDetector(
-            onTap: _onSend,
+            onTap: canSubmit ? _onSend : null,
             child: Container(
               width: 48,
               height: 48,
-              decoration: const BoxDecoration(
-                color: DT.primary,
+              decoration: BoxDecoration(
+                color: canSubmit ? DT.primary : DT.muted,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.send, color: DT.primaryFg, size: 20),

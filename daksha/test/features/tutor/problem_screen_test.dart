@@ -10,6 +10,7 @@ import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/features/common/cards.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
+import 'package:daksha/features/tutor/solved_screen.dart';
 import 'package:daksha/features/tutor/widgets/daksha_bubble.dart';
 import 'package:daksha/features/tutor/widgets/hint_level_dots.dart';
 
@@ -20,6 +21,8 @@ import 'package:daksha/features/tutor/widgets/hint_level_dots.dart';
 class _MockTutorService extends StateNotifier<TutorState>
     implements TutorService {
   _MockTutorService(super.initial);
+
+  void setState(TutorState next) => state = next;
 
   @override
   Future<void> startProblem(String problemText) async {}
@@ -63,6 +66,10 @@ Widget _wrapWithState(TutorState state) {
           GoRoute(
             path: '/problem',
             builder: (_, __) => const ProblemScreen(problemText: 'Solve: x + 3 = 7'),
+          ),
+          GoRoute(
+            path: '/solved',
+            builder: (_, __) => const SolvedScreen(),
           ),
         ],
       ),
@@ -136,16 +143,54 @@ void main() {
   });
 
   group('ProblemScreen — TutorSolved', () {
-    testWidgets('shows solved state placeholder text', (tester) async {
+    testWidgets('navigates to SolvedScreen when state transitions to TutorSolved',
+        (tester) async {
+      // Start in TutorAsking so ref.listen can detect the transition.
+      final mockService = _MockTutorService(
+        const TutorState.asking(
+          problemText: 'Solve: x + 3 = 7',
+          topic: _mathTopic,
+          opener: 'What is x?',
+          problemId: 'test-id',
+        ),
+      );
+
       await tester.pumpWidget(
-        _wrapWithState(
-          const TutorState.solved(problemId: 'done-id'),
+        ProviderScope(
+          overrides: [
+            tutorServiceProvider.overrideWith((_) => mockService),
+          ],
+          child: MaterialApp.router(
+            theme: buildDakshaTheme(),
+            routerConfig: GoRouter(
+              initialLocation: '/problem',
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (_, __) => const Scaffold(body: Text('Home')),
+                ),
+                GoRoute(
+                  path: '/problem',
+                  builder: (_, __) =>
+                      const ProblemScreen(problemText: 'Solve: x + 3 = 7'),
+                ),
+                GoRoute(
+                  path: '/solved',
+                  builder: (_, __) => const SolvedScreen(),
+                ),
+              ],
+            ),
+          ),
         ),
       );
       await tester.pump();
-      // In the solved state, the chat area shows 'Solved!' text
-      // (navigation via ref.listen is async and may not complete in sync tests)
-      expect(find.text('Solved!'), findsOneWidget);
+
+      // Transition to TutorSolved — ref.listen should trigger context.go('/solved').
+      mockService.setState(const TutorState.solved(problemId: 'done-id'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SolvedScreen), findsOneWidget);
+      expect(find.text('Right.'), findsOneWidget);
     });
   });
 }

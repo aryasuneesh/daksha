@@ -4,9 +4,14 @@ import 'package:daksha/core/typography.dart';
 import 'package:daksha/features/common/cards.dart';
 
 class ProblemHeader extends StatelessWidget {
-  const ProblemHeader({super.key, required this.problemText});
+  const ProblemHeader({
+    super.key,
+    required this.problemText,
+    this.label = 'Problem',
+  });
 
   final String problemText;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +20,7 @@ class ProblemHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Solve for x',
+            label,
             style: DakshaTypography.caption.copyWith(color: DT.muted),
           ),
           const SizedBox(height: DT.xs),

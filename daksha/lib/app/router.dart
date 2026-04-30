@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
+import 'package:daksha/features/tutor/solved_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -15,6 +16,10 @@ final appRouter = GoRouter(
       builder: (context, state) => ProblemScreen(
         problemText: state.extra as String? ?? '',
       ),
+    ),
+    GoRoute(
+      path: '/solved',
+      builder: (context, state) => const SolvedScreen(),
     ),
     GoRoute(
       path: '/capture',
