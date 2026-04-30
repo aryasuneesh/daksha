@@ -2,24 +2,27 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
 import 'package:daksha/features/common/buttons.dart';
 import 'package:daksha/features/common/cards.dart';
 import 'package:daksha/features/common/top_bar.dart';
+import 'package:daksha/services/ocr_service.dart';
 
 // ── Public screen ─────────────────────────────────────────────────────────────
 
-class CaptureScreen extends StatefulWidget {
+class CaptureScreen extends ConsumerStatefulWidget {
   const CaptureScreen({super.key});
 
   @override
-  State<CaptureScreen> createState() => _CaptureScreenState();
+  ConsumerState<CaptureScreen> createState() => _CaptureScreenState();
 }
 
-class _CaptureScreenState extends State<CaptureScreen> {
+class _CaptureScreenState extends ConsumerState<CaptureScreen> {
   bool _photoMode = true;
   CameraController? _controller;
   bool _cameraReady = false;
@@ -27,9 +30,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
   // Type-mode text entry
   final TextEditingController _typeController = TextEditingController();
 
-  // OCR state
-  bool _isProcessing = false;
-  String? _parsedText;
+  // OCR state via ValueNotifier — avoids addPostFrameCallback accumulation
+  final _ocrNotifier = ValueNotifier<({bool loading, String? text})>(
+    (loading: false, text: null),
+  );
 
   @override
   void initState() {
@@ -62,6 +66,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
   @override
   void dispose() {
+    _ocrNotifier.dispose();
     _controller?.dispose();
     _typeController.dispose();
     super.dispose();
@@ -72,11 +77,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _onCapture() async {
     if (_controller == null || !_cameraReady) return;
 
-    setState(() {
-      _isProcessing = true;
-      _parsedText = null;
-    });
-
+    _ocrNotifier.value = (loading: true, text: null);
     _showOcrSheet();
 
     try {
@@ -85,29 +86,32 @@ class _CaptureScreenState extends State<CaptureScreen> {
       // Pass bytes to OCR (no disk persistence — bytes are discarded after use)
       final text = await _runOcr(bytes);
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _parsedText = text ?? 'Could not read problem — please try again.';
-        });
+        _ocrNotifier.value = (
+          loading: false,
+          text: text ?? 'Could not read problem — please try again.',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _parsedText = 'Could not read problem — please try again.';
-        });
+        _ocrNotifier.value = (
+          loading: false,
+          text: 'Could not read problem — please try again.',
+        );
       }
     }
   }
 
-  /// Hook point: in production this calls OcrService. Kept separate so it can
-  /// be overridden / injected in tests without needing a real camera.
+  /// Delegates to [OcrService] via [engineProvider]. Returns null if the engine
+  /// is not yet loaded (model not downloaded), letting the UI show the fallback.
   Future<String?> _runOcr(Uint8List bytes) async {
-    // OcrService is not wired here because InferenceEngine is not yet
-    // reachable from the widget layer without a provider. The screen exposes
-    // [onOcr] through the constructor in production builds (see factory below).
-    // During the current integration step the sheet shows the placeholder text.
-    return null;
+    final engineAsync = ref.read(engineProvider);
+    final engine = engineAsync.valueOrNull;
+    if (engine == null) return null; // engine not loaded yet
+    if (!engine.isLoaded) {
+      await engine.load();
+    }
+    final service = OcrService(engine);
+    return service.extractProblemText(bytes);
   }
 
   void _showOcrSheet() {
@@ -120,42 +124,29 @@ class _CaptureScreenState extends State<CaptureScreen> {
           top: Radius.circular(DT.radiusDialog),
         ),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          // Sync sheet state with the outer widget state via a listener.
-          void sync() {
-            if (ctx.mounted) {
-              setSheetState(() {});
+      builder: (_) => ValueListenableBuilder<({bool loading, String? text})>(
+        valueListenable: _ocrNotifier,
+        builder: (context, state, _) => _OcrSheet(
+          isLoading: state.loading,
+          parsedText: state.text,
+          onEdit: () {
+            Navigator.of(context).pop();
+            if (state.text != null) {
+              _typeController.text = state.text!;
             }
-          }
-
-          // Register listener once.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(sync);
-          });
-
-          return _OcrSheet(
-            isLoading: _isProcessing,
-            parsedText: _parsedText,
-            onEdit: () {
-              Navigator.of(ctx).pop();
-              if (_parsedText != null) {
-                _typeController.text = _parsedText!;
-              }
-              setState(() => _photoMode = false);
-            },
-            onUse: () {
-              Navigator.of(ctx).pop();
-              if (_parsedText != null) {
-                context.push('/problem', extra: _parsedText);
-              }
-            },
-            onTypeInstead: () {
-              Navigator.of(ctx).pop();
-              setState(() => _photoMode = false);
-            },
-          );
-        },
+            setState(() => _photoMode = false);
+          },
+          onUse: () {
+            Navigator.of(context).pop();
+            if (state.text != null) {
+              context.push('/problem', extra: state.text);
+            }
+          },
+          onTypeInstead: () {
+            Navigator.of(context).pop();
+            setState(() => _photoMode = false);
+          },
+        ),
       ),
     );
   }
