@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:daksha/features/tutor/home_screen.dart';
+import 'package:daksha/features/tutor/problem_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const _PlaceholderScreen(title: 'Home'),
+      builder: (context, state) => const HomeScreen(),
     ),
     GoRoute(
       path: '/problem',
-      builder: (context, state) => const _PlaceholderScreen(title: 'Problem'),
+      builder: (context, state) => ProblemScreen(
+        problemText: state.extra as String? ?? '',
+      ),
     ),
     GoRoute(
       path: '/capture',
@@ -18,7 +22,8 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) => const _PlaceholderScreen(title: 'Dashboard'),
+      builder: (context, state) =>
+          const _PlaceholderScreen(title: 'Dashboard'),
     ),
     GoRoute(
       path: '/parent/gate',
