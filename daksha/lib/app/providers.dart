@@ -6,6 +6,7 @@ import 'package:daksha/inference/inference_engine.dart';
 import 'package:daksha/domain/taxonomy.dart';
 import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
+import 'package:daksha/services/parent/parent_auth_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -41,5 +42,13 @@ final tutorServiceProvider =
   // or after engine/db are ready. Screens handle loading/error via ref.watch.
   throw UnimplementedError(
     'tutorServiceProvider must be overridden via ProviderScope.overrides',
+  );
+});
+
+/// Parent auth service provider.
+/// Must be overridden in tests and in the real app's ProviderScope.
+final parentAuthServiceProvider = Provider<ParentAuthService>((ref) {
+  throw UnimplementedError(
+    'parentAuthServiceProvider must be overridden via ProviderScope.overrides',
   );
 });
