@@ -24,7 +24,7 @@ dependencies:
   # Core dependencies
   flutter_riverpod: ^2.5.1
   go_router: ^14.0.0
-  sqflite_sqlcipher: ^3.1.0+1
+  sqlcipher_flutter_libs: ^0.6.0
   drift: ^2.18.0
   flutter_secure_storage: ^10.0.0
   cryptography: ^2.7.0

@@ -15,17 +15,18 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 }
 
-/// Opens the encrypted database.
-/// [key] must be a 64-char hex string from SecureKeyProvider.
+/// Opens the encrypted database. [key] must be a 64-char hex string.
 Future<AppDatabase> openAppDatabase(String key) async {
-  final dir = await getApplicationDocumentsDirectory();
+  if (!RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(key)) {
+    throw ArgumentError('Database key must be a 64-char hex string.');
+  }
+  final dir = await getApplicationSupportDirectory();
   final dbPath = p.join(dir.path, 'daksha.db');
 
   final executor = NativeDatabase.createInBackground(
     File(dbPath),
     setup: (db) {
-      // SQLCipher key pragma — must be first statement
-      db.execute("PRAGMA key = '$key';");
+      db.execute("PRAGMA key = \"x'$key'\";");
     },
   );
 
