@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 abstract interface class SecureStorageAdapter {
   Future<String?> read(String key);
   Future<void> write(String key, String value);
@@ -24,4 +26,17 @@ class SecureKeyProvider {
     final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
+}
+
+class FlutterSecureStorageAdapter implements SecureStorageAdapter {
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(),
+  );
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
 }

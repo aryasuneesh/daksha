@@ -1,22 +1,8 @@
 import 'package:flutter/material.dart';
-import 'core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'app/app.dart';
 
 void main() {
-  runApp(const DakshaApp());
-}
-
-class DakshaApp extends StatelessWidget {
-  const DakshaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Daksha',
-      debugShowCheckedModeBanner: false,
-      theme: buildDakshaTheme(),
-      home: const Scaffold(
-        body: Center(child: Text('Daksha')),
-      ),
-    );
-  }
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: DakshaApp()));
 }
