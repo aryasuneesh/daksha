@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
-import 'package:daksha/core/security/window_security.dart';
+import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/core/typography.dart';
 
 // ---------------------------------------------------------------------------
@@ -17,23 +17,12 @@ class SetupScreen extends ConsumerStatefulWidget {
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends ConsumerState<SetupScreen> {
+class _SetupScreenState extends ConsumerState<SetupScreen>
+    with SecureScreenMixin {
   final List<String> _pin = [];
   String? _firstPin;
   bool _confirming = false;
   String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    WindowSecurity.enableSecure();
-  }
-
-  @override
-  void dispose() {
-    WindowSecurity.disableSecure();
-    super.dispose();
-  }
 
   void _onKey(String digit) {
     if (_pin.length >= 4) return;

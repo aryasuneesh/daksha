@@ -69,6 +69,11 @@ void main() {
 
   setUp(() {
     _mockWindowChannel();
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+              const MethodChannel('daksha/window'), null);
+    });
     mockService = _MockParentAuthService();
   });
 

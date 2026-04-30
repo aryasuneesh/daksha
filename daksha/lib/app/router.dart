@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/features/capture/capture_screen.dart';
 import 'package:daksha/features/parent/gate_screen.dart';
 import 'package:daksha/features/parent/setup_screen.dart';
@@ -44,27 +45,31 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/parent/shell',
       builder: (context, state) =>
-          const _PlaceholderScreen(title: 'Parent Shell'),
+          const _SecurePlaceholderScreen(title: 'Parent Shell'),
     ),
     GoRoute(
       path: '/parent/voice',
       builder: (context, state) =>
-          const _PlaceholderScreen(title: 'Parent Voice'),
+          const _SecurePlaceholderScreen(title: 'Parent Voice'),
     ),
   ],
 );
 
-class _PlaceholderScreen extends StatelessWidget {
+class _SecurePlaceholderScreen extends StatefulWidget {
+  const _SecurePlaceholderScreen({required this.title});
   final String title;
-  const _PlaceholderScreen({required this.title});
+  @override
+  State<_SecurePlaceholderScreen> createState() =>
+      _SecurePlaceholderScreenState();
+}
 
+class _SecurePlaceholderScreenState extends State<_SecurePlaceholderScreen>
+    with SecureScreenMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Text(title, style: Theme.of(context).textTheme.displayLarge),
-      ),
+      appBar: AppBar(title: Text(widget.title)),
+      body: Center(child: Text(widget.title)),
     );
   }
 }

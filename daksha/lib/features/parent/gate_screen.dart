@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
-import 'package:daksha/core/security/window_security.dart';
+import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/core/typography.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
 
@@ -19,7 +19,7 @@ class GateScreen extends ConsumerStatefulWidget {
 }
 
 class _GateScreenState extends ConsumerState<GateScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, SecureScreenMixin {
   final List<String> _pin = [];
   bool _locked = false;
   DateTime? _lockoutUntil;
@@ -33,7 +33,6 @@ class _GateScreenState extends ConsumerState<GateScreen>
   @override
   void initState() {
     super.initState();
-    WindowSecurity.enableSecure();
 
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 400),
@@ -47,7 +46,6 @@ class _GateScreenState extends ConsumerState<GateScreen>
   @override
   void dispose() {
     _shakeController.dispose();
-    WindowSecurity.disableSecure();
     super.dispose();
   }
 
