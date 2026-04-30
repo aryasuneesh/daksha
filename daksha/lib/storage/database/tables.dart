@@ -46,3 +46,16 @@ class ReviewCards extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+// Single-row table for parent PIN authentication
+class ParentAuth extends Table {
+  // Single row (id always 1)
+  IntColumn get id => integer().withDefault(const Constant(1))();
+  TextColumn get pinHash => text()(); // hex-encoded Argon2id hash
+  TextColumn get salt => text()(); // hex-encoded random salt (16 bytes)
+  IntColumn get failedCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get lockoutUntil => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

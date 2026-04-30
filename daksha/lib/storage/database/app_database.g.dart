@@ -1551,6 +1551,362 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   }
 }
 
+class $ParentAuthTable extends ParentAuth
+    with TableInfo<$ParentAuthTable, ParentAuthData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ParentAuthTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _pinHashMeta = const VerificationMeta(
+    'pinHash',
+  );
+  @override
+  late final GeneratedColumn<String> pinHash = GeneratedColumn<String>(
+    'pin_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _saltMeta = const VerificationMeta('salt');
+  @override
+  late final GeneratedColumn<String> salt = GeneratedColumn<String>(
+    'salt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _failedCountMeta = const VerificationMeta(
+    'failedCount',
+  );
+  @override
+  late final GeneratedColumn<int> failedCount = GeneratedColumn<int>(
+    'failed_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lockoutUntilMeta = const VerificationMeta(
+    'lockoutUntil',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lockoutUntil = GeneratedColumn<DateTime>(
+    'lockout_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    pinHash,
+    salt,
+    failedCount,
+    lockoutUntil,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'parent_auth';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ParentAuthData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('pin_hash')) {
+      context.handle(
+        _pinHashMeta,
+        pinHash.isAcceptableOrUnknown(data['pin_hash']!, _pinHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pinHashMeta);
+    }
+    if (data.containsKey('salt')) {
+      context.handle(
+        _saltMeta,
+        salt.isAcceptableOrUnknown(data['salt']!, _saltMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_saltMeta);
+    }
+    if (data.containsKey('failed_count')) {
+      context.handle(
+        _failedCountMeta,
+        failedCount.isAcceptableOrUnknown(
+          data['failed_count']!,
+          _failedCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lockout_until')) {
+      context.handle(
+        _lockoutUntilMeta,
+        lockoutUntil.isAcceptableOrUnknown(
+          data['lockout_until']!,
+          _lockoutUntilMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ParentAuthData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ParentAuthData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      pinHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pin_hash'],
+      )!,
+      salt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}salt'],
+      )!,
+      failedCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}failed_count'],
+      )!,
+      lockoutUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}lockout_until'],
+      ),
+    );
+  }
+
+  @override
+  $ParentAuthTable createAlias(String alias) {
+    return $ParentAuthTable(attachedDatabase, alias);
+  }
+}
+
+class ParentAuthData extends DataClass implements Insertable<ParentAuthData> {
+  final int id;
+  final String pinHash;
+  final String salt;
+  final int failedCount;
+  final DateTime? lockoutUntil;
+  const ParentAuthData({
+    required this.id,
+    required this.pinHash,
+    required this.salt,
+    required this.failedCount,
+    this.lockoutUntil,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['pin_hash'] = Variable<String>(pinHash);
+    map['salt'] = Variable<String>(salt);
+    map['failed_count'] = Variable<int>(failedCount);
+    if (!nullToAbsent || lockoutUntil != null) {
+      map['lockout_until'] = Variable<DateTime>(lockoutUntil);
+    }
+    return map;
+  }
+
+  ParentAuthCompanion toCompanion(bool nullToAbsent) {
+    return ParentAuthCompanion(
+      id: Value(id),
+      pinHash: Value(pinHash),
+      salt: Value(salt),
+      failedCount: Value(failedCount),
+      lockoutUntil: lockoutUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lockoutUntil),
+    );
+  }
+
+  factory ParentAuthData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ParentAuthData(
+      id: serializer.fromJson<int>(json['id']),
+      pinHash: serializer.fromJson<String>(json['pinHash']),
+      salt: serializer.fromJson<String>(json['salt']),
+      failedCount: serializer.fromJson<int>(json['failedCount']),
+      lockoutUntil: serializer.fromJson<DateTime?>(json['lockoutUntil']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'pinHash': serializer.toJson<String>(pinHash),
+      'salt': serializer.toJson<String>(salt),
+      'failedCount': serializer.toJson<int>(failedCount),
+      'lockoutUntil': serializer.toJson<DateTime?>(lockoutUntil),
+    };
+  }
+
+  ParentAuthData copyWith({
+    int? id,
+    String? pinHash,
+    String? salt,
+    int? failedCount,
+    Value<DateTime?> lockoutUntil = const Value.absent(),
+  }) => ParentAuthData(
+    id: id ?? this.id,
+    pinHash: pinHash ?? this.pinHash,
+    salt: salt ?? this.salt,
+    failedCount: failedCount ?? this.failedCount,
+    lockoutUntil: lockoutUntil.present ? lockoutUntil.value : this.lockoutUntil,
+  );
+  ParentAuthData copyWithCompanion(ParentAuthCompanion data) {
+    return ParentAuthData(
+      id: data.id.present ? data.id.value : this.id,
+      pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
+      salt: data.salt.present ? data.salt.value : this.salt,
+      failedCount: data.failedCount.present
+          ? data.failedCount.value
+          : this.failedCount,
+      lockoutUntil: data.lockoutUntil.present
+          ? data.lockoutUntil.value
+          : this.lockoutUntil,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParentAuthData(')
+          ..write('id: $id, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('salt: $salt, ')
+          ..write('failedCount: $failedCount, ')
+          ..write('lockoutUntil: $lockoutUntil')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, pinHash, salt, failedCount, lockoutUntil);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ParentAuthData &&
+          other.id == this.id &&
+          other.pinHash == this.pinHash &&
+          other.salt == this.salt &&
+          other.failedCount == this.failedCount &&
+          other.lockoutUntil == this.lockoutUntil);
+}
+
+class ParentAuthCompanion extends UpdateCompanion<ParentAuthData> {
+  final Value<int> id;
+  final Value<String> pinHash;
+  final Value<String> salt;
+  final Value<int> failedCount;
+  final Value<DateTime?> lockoutUntil;
+  const ParentAuthCompanion({
+    this.id = const Value.absent(),
+    this.pinHash = const Value.absent(),
+    this.salt = const Value.absent(),
+    this.failedCount = const Value.absent(),
+    this.lockoutUntil = const Value.absent(),
+  });
+  ParentAuthCompanion.insert({
+    this.id = const Value.absent(),
+    required String pinHash,
+    required String salt,
+    this.failedCount = const Value.absent(),
+    this.lockoutUntil = const Value.absent(),
+  }) : pinHash = Value(pinHash),
+       salt = Value(salt);
+  static Insertable<ParentAuthData> custom({
+    Expression<int>? id,
+    Expression<String>? pinHash,
+    Expression<String>? salt,
+    Expression<int>? failedCount,
+    Expression<DateTime>? lockoutUntil,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pinHash != null) 'pin_hash': pinHash,
+      if (salt != null) 'salt': salt,
+      if (failedCount != null) 'failed_count': failedCount,
+      if (lockoutUntil != null) 'lockout_until': lockoutUntil,
+    });
+  }
+
+  ParentAuthCompanion copyWith({
+    Value<int>? id,
+    Value<String>? pinHash,
+    Value<String>? salt,
+    Value<int>? failedCount,
+    Value<DateTime?>? lockoutUntil,
+  }) {
+    return ParentAuthCompanion(
+      id: id ?? this.id,
+      pinHash: pinHash ?? this.pinHash,
+      salt: salt ?? this.salt,
+      failedCount: failedCount ?? this.failedCount,
+      lockoutUntil: lockoutUntil ?? this.lockoutUntil,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (pinHash.present) {
+      map['pin_hash'] = Variable<String>(pinHash.value);
+    }
+    if (salt.present) {
+      map['salt'] = Variable<String>(salt.value);
+    }
+    if (failedCount.present) {
+      map['failed_count'] = Variable<int>(failedCount.value);
+    }
+    if (lockoutUntil.present) {
+      map['lockout_until'] = Variable<DateTime>(lockoutUntil.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParentAuthCompanion(')
+          ..write('id: $id, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('salt: $salt, ')
+          ..write('failedCount: $failedCount, ')
+          ..write('lockoutUntil: $lockoutUntil')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1559,6 +1915,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ConversationTurnsTable conversationTurns =
       $ConversationTurnsTable(this);
   late final $ReviewCardsTable reviewCards = $ReviewCardsTable(this);
+  late final $ParentAuthTable parentAuth = $ParentAuthTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1568,6 +1925,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     problems,
     conversationTurns,
     reviewCards,
+    parentAuth,
   ];
 }
 
@@ -2428,6 +2786,204 @@ typedef $$ReviewCardsTableProcessedTableManager =
       ReviewCard,
       PrefetchHooks Function()
     >;
+typedef $$ParentAuthTableCreateCompanionBuilder =
+    ParentAuthCompanion Function({
+      Value<int> id,
+      required String pinHash,
+      required String salt,
+      Value<int> failedCount,
+      Value<DateTime?> lockoutUntil,
+    });
+typedef $$ParentAuthTableUpdateCompanionBuilder =
+    ParentAuthCompanion Function({
+      Value<int> id,
+      Value<String> pinHash,
+      Value<String> salt,
+      Value<int> failedCount,
+      Value<DateTime?> lockoutUntil,
+    });
+
+class $$ParentAuthTableFilterComposer
+    extends Composer<_$AppDatabase, $ParentAuthTable> {
+  $$ParentAuthTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pinHash => $composableBuilder(
+    column: $table.pinHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get salt => $composableBuilder(
+    column: $table.salt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get failedCount => $composableBuilder(
+    column: $table.failedCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lockoutUntil => $composableBuilder(
+    column: $table.lockoutUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ParentAuthTableOrderingComposer
+    extends Composer<_$AppDatabase, $ParentAuthTable> {
+  $$ParentAuthTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pinHash => $composableBuilder(
+    column: $table.pinHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get salt => $composableBuilder(
+    column: $table.salt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get failedCount => $composableBuilder(
+    column: $table.failedCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lockoutUntil => $composableBuilder(
+    column: $table.lockoutUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ParentAuthTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ParentAuthTable> {
+  $$ParentAuthTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pinHash =>
+      $composableBuilder(column: $table.pinHash, builder: (column) => column);
+
+  GeneratedColumn<String> get salt =>
+      $composableBuilder(column: $table.salt, builder: (column) => column);
+
+  GeneratedColumn<int> get failedCount => $composableBuilder(
+    column: $table.failedCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lockoutUntil => $composableBuilder(
+    column: $table.lockoutUntil,
+    builder: (column) => column,
+  );
+}
+
+class $$ParentAuthTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParentAuthTable,
+          ParentAuthData,
+          $$ParentAuthTableFilterComposer,
+          $$ParentAuthTableOrderingComposer,
+          $$ParentAuthTableAnnotationComposer,
+          $$ParentAuthTableCreateCompanionBuilder,
+          $$ParentAuthTableUpdateCompanionBuilder,
+          (
+            ParentAuthData,
+            BaseReferences<_$AppDatabase, $ParentAuthTable, ParentAuthData>,
+          ),
+          ParentAuthData,
+          PrefetchHooks Function()
+        > {
+  $$ParentAuthTableTableManager(_$AppDatabase db, $ParentAuthTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ParentAuthTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ParentAuthTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ParentAuthTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> pinHash = const Value.absent(),
+                Value<String> salt = const Value.absent(),
+                Value<int> failedCount = const Value.absent(),
+                Value<DateTime?> lockoutUntil = const Value.absent(),
+              }) => ParentAuthCompanion(
+                id: id,
+                pinHash: pinHash,
+                salt: salt,
+                failedCount: failedCount,
+                lockoutUntil: lockoutUntil,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String pinHash,
+                required String salt,
+                Value<int> failedCount = const Value.absent(),
+                Value<DateTime?> lockoutUntil = const Value.absent(),
+              }) => ParentAuthCompanion.insert(
+                id: id,
+                pinHash: pinHash,
+                salt: salt,
+                failedCount: failedCount,
+                lockoutUntil: lockoutUntil,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ParentAuthTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParentAuthTable,
+      ParentAuthData,
+      $$ParentAuthTableFilterComposer,
+      $$ParentAuthTableOrderingComposer,
+      $$ParentAuthTableAnnotationComposer,
+      $$ParentAuthTableCreateCompanionBuilder,
+      $$ParentAuthTableUpdateCompanionBuilder,
+      (
+        ParentAuthData,
+        BaseReferences<_$AppDatabase, $ParentAuthTable, ParentAuthData>,
+      ),
+      ParentAuthData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2440,4 +2996,6 @@ class $AppDatabaseManager {
       $$ConversationTurnsTableTableManager(_db, _db.conversationTurns);
   $$ReviewCardsTableTableManager get reviewCards =>
       $$ReviewCardsTableTableManager(_db, _db.reviewCards);
+  $$ParentAuthTableTableManager get parentAuth =>
+      $$ParentAuthTableTableManager(_db, _db.parentAuth);
 }

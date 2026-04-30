@@ -5,16 +5,28 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:daksha/domain/tutor_service.dart';
+import 'package:daksha/services/parent/parent_auth_service.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [LearnerProfile, Problems, ConversationTurns, ReviewCards])
-class AppDatabase extends _$AppDatabase implements ProblemStore {
+@DriftDatabase(
+  tables: [LearnerProfile, Problems, ConversationTurns, ReviewCards, ParentAuth],
+)
+class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(parentAuth);
+      }
+    },
+  );
 
   // ---------------------------------------------------------------------------
   // ProblemStore implementation
@@ -64,6 +76,37 @@ class AppDatabase extends _$AppDatabase implements ProblemStore {
         role: role,
         content: content,
         createdAt: createdAt,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AuthStore implementation
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<ParentAuthRow?> getAuthRow() async {
+    final row = await (select(parentAuth)
+          ..where((t) => t.id.equals(1)))
+        .getSingleOrNull();
+    if (row == null) return null;
+    return ParentAuthRow(
+      pinHash: row.pinHash,
+      salt: row.salt,
+      failedCount: row.failedCount,
+      lockoutUntil: row.lockoutUntil,
+    );
+  }
+
+  @override
+  Future<void> upsertAuthRow(ParentAuthRow row) async {
+    await into(parentAuth).insertOnConflictUpdate(
+      ParentAuthCompanion(
+        id: const Value(1),
+        pinHash: Value(row.pinHash),
+        salt: Value(row.salt),
+        failedCount: Value(row.failedCount),
+        lockoutUntil: Value(row.lockoutUntil),
       ),
     );
   }
