@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:daksha/core/theme.dart';
-import 'router.dart';
+import 'package:daksha/app/router.dart';
 
 class DakshaApp extends StatelessWidget {
   const DakshaApp({super.key});
