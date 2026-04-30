@@ -8,6 +8,7 @@ abstract interface class SecureStorageAdapter {
 class SecureKeyProvider {
   final SecureStorageAdapter _storage;
   static const _dbKey = 'daksha.db.key';
+  static final _random = Random.secure();
 
   SecureKeyProvider(this._storage);
 
@@ -20,7 +21,7 @@ class SecureKeyProvider {
   }
 
   String _generateKey() {
-    final bytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
+    final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }

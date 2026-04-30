@@ -42,22 +42,17 @@ void main() {
     });
 
     test('generated keys are random (different each time)', () async {
-      when(() => mockStorage.read('daksha.db.key')).thenAnswer((_) async => null);
-      when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
+      final storage1 = MockSecureStorageAdapter();
+      when(() => storage1.read(any())).thenAnswer((_) async => null);
+      when(() => storage1.write(any(), any())).thenAnswer((_) async {});
 
-      final provider1 = SecureKeyProvider(mockStorage);
-      final key1 = await provider1.getOrCreateKey();
+      final storage2 = MockSecureStorageAdapter();
+      when(() => storage2.read(any())).thenAnswer((_) async => null);
+      when(() => storage2.write(any(), any())).thenAnswer((_) async {});
 
-      // Reset mock for second call
-      mockStorage = MockSecureStorageAdapter();
-      when(() => mockStorage.read('daksha.db.key')).thenAnswer((_) async => null);
-      when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
+      final key1 = await SecureKeyProvider(storage1).getOrCreateKey();
+      final key2 = await SecureKeyProvider(storage2).getOrCreateKey();
 
-      final provider2 = SecureKeyProvider(mockStorage);
-      final key2 = await provider2.getOrCreateKey();
-
-      expect(key1, isNotEmpty);
-      expect(key2, isNotEmpty);
       expect(key1, isNot(key2));
     });
   });
