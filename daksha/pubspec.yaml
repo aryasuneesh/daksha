@@ -38,6 +38,7 @@ dependencies:
   uuid: ^4.4.0
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  llama_cpp_dart: ^0.2.2
 
 dev_dependencies:
   flutter_test:
