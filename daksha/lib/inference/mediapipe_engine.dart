@@ -2,13 +2,8 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 
 import 'inference_engine.dart';
 
-/// [InferenceEngine] implementation backed by the flutter_gemma plugin
-/// (MediaPipe LLM Inference API).
-///
-/// [modelPath] must be an absolute path to a `.bin` model file that already
-/// exists on the device (e.g. downloaded by a separate model-management step).
-/// On [load], the file is registered with the plugin via a `file://` URI and
-/// the inference engine is initialised.
+// maxTokens/temperature from InferenceRequest are not forwarded; the plugin
+// fixes them at load() time. Pass constructor params to configure them.
 class MediaPipeEngine implements InferenceEngine {
   final String modelPath;
   final int _maxTokens;
@@ -30,8 +25,6 @@ class MediaPipeEngine implements InferenceEngine {
 
   @override
   Future<void> load() async {
-    // Copy the on-device file into the plugin's managed app-documents location,
-    // then initialise the native inference engine.
     await _plugin.loadNetworkModel(url: 'file://$modelPath');
     await _plugin.init(
       maxTokens: _maxTokens,
