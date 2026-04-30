@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/design_tokens.dart';
-import '../../core/typography.dart';
+import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/permission_guard.dart';
+import 'package:daksha/core/typography.dart';
 
 class InternetLeakBanner extends StatelessWidget {
   final NetworkPermissionStatus status;
