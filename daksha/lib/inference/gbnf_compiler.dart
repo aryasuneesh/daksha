@@ -1,15 +1,4 @@
-/// Compiles simple JSON schemas to GBNF grammar strings for llama.cpp
-/// constrained output.
-///
-/// Supported schema shapes:
-///   - Top-level `{"type": "object", "properties": {...}}`
-///   - Property types: `string`, `number`, `integer`, `boolean`
-///   - All listed properties are treated as required.
 abstract final class GbnfCompiler {
-  /// Compiles [schema] to a GBNF grammar string.
-  ///
-  /// Throws [ArgumentError] if the schema type is not `"object"` or a
-  /// property type is unsupported.
   static String compile(Map<String, dynamic> schema) {
     final type = schema['type'] as String?;
     if (type != 'object') {
@@ -45,8 +34,6 @@ abstract final class GbnfCompiler {
     return buffer.toString();
   }
 
-  /// Maps a JSON schema property type to the GBNF rule name or inline
-  /// expression used on the right-hand side of a pair.
   static String _typeToRule(String propType, String key) {
     switch (propType) {
       case 'string':
@@ -54,7 +41,7 @@ abstract final class GbnfCompiler {
       case 'number':
         return 'number';
       case 'integer':
-        return 'number';
+        return 'integer';
       case 'boolean':
         return 'boolean';
       default:
@@ -65,8 +52,9 @@ abstract final class GbnfCompiler {
   }
 
   static void _writeBaseRules(StringBuffer buf) {
-    buf.writeln('string ::= "\\"" [^"]* "\\""');
+    buf.writeln(r'string ::= "\"" ( [^"\\] | "\\" ["\\/bfnrt] )* "\""');
     buf.writeln('number ::= [0-9]+ ("." [0-9]+)?');
+    buf.writeln('integer ::= [0-9]+');
     buf.writeln('boolean ::= "true" | "false"');
     buf.writeln('space ::= " "*');
   }

@@ -51,7 +51,7 @@ void main() {
       expect(grammar, contains('"true"'));
     });
 
-    test('integer property produces key and number/integer rule', () {
+    test('integer property produces a decimal-free integer rule', () {
       final schema = {
         'type': 'object',
         'properties': {
@@ -62,10 +62,11 @@ void main() {
       final grammar = GbnfCompiler.compile(schema);
 
       expect(grammar, contains('"score"'));
-      // integer should map to a number-like rule
-      final hasNumberRule =
-          grammar.contains('number') || grammar.contains('integer');
-      expect(hasNumberRule, isTrue);
+      expect(grammar, contains('integer'));
+      // The integer rule must not permit decimals (no '.' in the rule body)
+      final integerRuleLine =
+          grammar.split('\n').firstWhere((l) => l.startsWith('integer ::='));
+      expect(integerRuleLine, isNot(contains('.')));
     });
 
     test('unsupported top-level type throws ArgumentError', () {
