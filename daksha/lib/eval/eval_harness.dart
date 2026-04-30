@@ -53,16 +53,17 @@ class EvalHarness {
     int hintGenerated = 0;
 
     for (final fixture in fixtureList) {
-      // 1. Classify
-      final classification = await classifier.classify(fixture.problemText);
-      final topic = classification?.topic ??
-          TaxonomyLoader.findBySlug(topics, fixture.expectedSlug) ??
+      // Always use the expected topic for service calls so metrics are
+      // fixture-grounded regardless of classifier accuracy.
+      final topic = TaxonomyLoader.findBySlug(topics, fixture.expectedSlug) ??
           Topic(
             subject: fixture.expectedSubject,
             slug: fixture.expectedSlug,
             displayName: fixture.expectedSlug,
           );
 
+      // 1. Classify
+      final classification = await classifier.classify(fixture.problemText);
       if (classification?.topic.slug == fixture.expectedSlug) classifyHit++;
 
       // 2. Generate opener
@@ -86,8 +87,8 @@ class EvalHarness {
         studentAttempt: fixture.sampleIncorrectAttempt,
         topic: topic,
       );
-      if (incorrectFeedback?.verdict != AttemptVerdict.correct &&
-          incorrectFeedback != null) {
+      if (incorrectFeedback != null &&
+          incorrectFeedback.verdict != AttemptVerdict.correct) {
         incorrectChecked++;
       }
 
