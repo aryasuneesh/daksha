@@ -38,6 +38,10 @@ class TaxonomyLoader {
   static List<Topic> filterBySubject(List<Topic> topics, String subject) =>
       topics.where((t) => t.subject == subject).toList();
 
-  static Topic? findBySlug(List<Topic> topics, String slug) =>
-      topics.cast<Topic?>().firstWhere((t) => t?.slug == slug, orElse: () => null);
+  static Topic? findBySlug(List<Topic> topics, String slug) {
+    for (final t in topics) {
+      if (t.slug == slug) return t;
+    }
+    return null;
+  }
 }
