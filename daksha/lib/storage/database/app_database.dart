@@ -41,21 +41,12 @@ class AppDatabase extends _$AppDatabase implements ProblemStore {
   }
 
   @override
-  Future<void> updateProblem(
-    String id, {
-    bool? solved,
-    int? hintLevel,
-    DateTime? firstHintAt,
-  }) async {
-    // The Problems table does not have hintLevel / firstHintAt columns, so
-    // we only persist what the schema supports (solved flag).
+  Future<void> updateProblem(String id, {bool? solved}) async {
     if (solved != null) {
       await (update(problems)..where((t) => t.id.equals(id))).write(
         ProblemsCompanion(solved: Value(solved)),
       );
     }
-    // hintLevel and firstHintAt are tracked in-memory by TutorState; persisting
-    // them would require a schema migration which is out-of-scope for Task 19.
   }
 
   @override

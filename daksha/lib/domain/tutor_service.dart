@@ -24,13 +24,8 @@ abstract interface class ProblemStore {
     required DateTime createdAt,
   });
 
-  /// Marks a problem solved or updates its hint metadata.
-  Future<void> updateProblem(
-    String id, {
-    bool? solved,
-    int? hintLevel,
-    DateTime? firstHintAt,
-  });
+  /// Marks a problem as solved.
+  Future<void> updateProblem(String id, {bool? solved});
 
   /// Records one conversation turn.
   Future<void> insertTurn({
@@ -67,18 +62,20 @@ class TutorService extends StateNotifier<TutorState> {
     final topic = classification?.topic ??
         const Topic(subject: 'general', slug: 'general', displayName: 'General');
 
+    // Get opener first — only persist to DB if inference succeeds.
+    final opener = await _socratic.generateSocraticOpener(
+      problemText: problemText,
+      topic: topic,
+    );
+    if (opener == null) return; // stay in classifying on inference failure
+
+    // Insert only after we have a valid opener.
     final problemId = await _store.insertProblem(
       text: problemText,
       subject: topic.subject,
       topicSlug: topic.slug,
       createdAt: _clock(),
     );
-
-    final opener = await _socratic.generateSocraticOpener(
-      problemText: problemText,
-      topic: topic,
-    );
-    if (opener == null) return; // stay in classifying on inference failure
 
     state = TutorState.asking(
       problemText: problemText,
@@ -176,12 +173,6 @@ class TutorService extends StateNotifier<TutorState> {
       hintLevel: newLevel,
     );
     if (hint == null) return; // stay in current state on inference failure
-
-    await _store.updateProblem(
-      problemId,
-      hintLevel: newLevel,
-      firstHintAt: newFirstHintAt,
-    );
 
     state = TutorState.hinting(
       problemText: problemText,

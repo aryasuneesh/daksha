@@ -83,7 +83,6 @@ class FakeSocratic extends SocraticService {
 class FakeStore implements ProblemStore {
   int _counter = 0;
   final Map<String, bool> _solved = {};
-  final Map<String, int> _hintLevels = {};
   final List<Map<String, dynamic>> turns = [];
 
   @override
@@ -99,14 +98,8 @@ class FakeStore implements ProblemStore {
   }
 
   @override
-  Future<void> updateProblem(
-    String id, {
-    bool? solved,
-    int? hintLevel,
-    DateTime? firstHintAt,
-  }) async {
+  Future<void> updateProblem(String id, {bool? solved}) async {
     if (solved != null) _solved[id] = solved;
-    if (hintLevel != null) _hintLevels[id] = hintLevel;
   }
 
   @override
@@ -124,7 +117,6 @@ class FakeStore implements ProblemStore {
   }
 
   bool? solvedFor(String id) => _solved[id];
-  int? hintLevelFor(String id) => _hintLevels[id];
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +163,7 @@ void main() {
             question: 'What is x?', hint: 'Think about subtraction'));
       final classifier = FakeClassifier()
         ..setResult(
-            ClassificationResult(topic: _kTopic, confidence: 0.9));
+            const ClassificationResult(topic: _kTopic, confidence: 0.9));
       final svc = _makeService(classifier: classifier, socratic: socratic);
 
       // addListener fires immediately with the current state, so we skip the
@@ -267,7 +259,7 @@ void main() {
       expect(svc.state, isA<TutorAsking>());
     });
 
-    test('records student turn in store on correct', () async {
+    test('records student turn in store on correct attempt', () async {
       socratic.setFeedback(const AttemptFeedback(
           verdict: AttemptVerdict.correct, explanation: 'Yes'));
 
@@ -276,6 +268,17 @@ void main() {
       expect(store.turns, hasLength(1));
       expect(store.turns[0]['role'], 'student');
       expect(store.turns[0]['content'], 'x = 3');
+    });
+
+    test('records student turn on incorrect attempt', () async {
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.incorrect, explanation: 'Wrong'));
+
+      await svc.submitAttempt('x = 99');
+
+      expect(store.turns, hasLength(1));
+      expect(store.turns[0]['role'], 'student');
+      expect(store.turns[0]['content'], 'x = 99');
     });
 
     test('throws StateError from idle', () async {
@@ -345,8 +348,8 @@ void main() {
       await svc2.requestHint(); // → level 3  (tick ~3s)
 
       // Now try to request again (level already 3, only ~3s elapsed << 3 min)
-      expect(
-        () => svc2.requestHint(),
+      await expectLater(
+        svc2.requestHint(),
         throwsA(isA<HintGateException>()),
       );
     });
