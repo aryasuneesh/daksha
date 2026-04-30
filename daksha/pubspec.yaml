@@ -71,6 +71,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/taxonomy/
 
   fonts:
     - family: DMSans
