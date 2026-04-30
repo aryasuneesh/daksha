@@ -52,5 +52,29 @@ void main() {
       ];
       expect(SrsService.dueQueue(cards, now), isEmpty);
     });
+
+    test('empty input returns empty list', () {
+      expect(SrsService.dueQueue([], DateTime(2024, 6, 15)), isEmpty);
+    });
+
+    test('three due cards returned in oldest-first order', () {
+      final now = DateTime(2024, 6, 15);
+      final cards = [
+        (dueAt: DateTime(2024, 6, 13), cardId: 'c'),
+        (dueAt: DateTime(2024, 6, 11), cardId: 'a'),
+        (dueAt: DateTime(2024, 6, 12), cardId: 'b'),
+      ];
+      expect(SrsService.dueQueue(cards, now), ['a', 'b', 'c']);
+    });
+  });
+
+  group('nextBox boundary coverage', () {
+    test('correct from box 4 promotes to box 5', () {
+      expect(SrsService.nextBox(correct: true, currentBox: 4), 5);
+    });
+
+    test('wrong from box 5 resets to box 1', () {
+      expect(SrsService.nextBox(correct: false, currentBox: 5), 1);
+    });
   });
 }
