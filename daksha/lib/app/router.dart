@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
 import 'package:daksha/features/tutor/solved_screen.dart';
@@ -27,8 +28,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) =>
-          const _PlaceholderScreen(title: 'Dashboard'),
+      builder: (context, state) => const DashboardScreen(),
     ),
     GoRoute(
       path: '/parent/gate',
