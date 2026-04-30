@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/theme.dart';
 
 void main() {
   runApp(const DakshaApp());
@@ -9,9 +10,11 @@ class DakshaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Daksha',
-      home: Scaffold(
+      debugShowCheckedModeBanner: false,
+      theme: buildDakshaTheme(),
+      home: const Scaffold(
         body: Center(child: Text('Daksha')),
       ),
     );
