@@ -7,6 +7,7 @@ import 'package:daksha/domain/taxonomy.dart';
 import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
+import 'package:daksha/services/tts_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -51,4 +52,9 @@ final parentAuthServiceProvider = Provider<ParentAuthService>((ref) {
   throw UnimplementedError(
     'parentAuthServiceProvider must be overridden via ProviderScope.overrides',
   );
+});
+
+/// TTS service — uses the real flutter_tts engine on device.
+final ttsServiceProvider = Provider<TtsService>((ref) {
+  return TtsService(FlutterTtsEngine());
 });

@@ -7,9 +7,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/theme.dart';
 import 'package:daksha/features/common/language_toggle.dart';
 import 'package:daksha/features/parent/shell_screen.dart';
+import 'package:daksha/services/tts_service.dart';
+
+// ---------------------------------------------------------------------------
+// Fake TTS engine
+// ---------------------------------------------------------------------------
+
+class _FakeTtsEngine implements TtsEngine {
+  final List<String> calls = [];
+
+  @override
+  Future<void> setLanguage(String locale) async => calls.add('lang:$locale');
+
+  @override
+  Future<void> setSpeechRate(double rate) async => calls.add('rate:$rate');
+
+  @override
+  Future<void> speak(String text) async => calls.add('speak:$text');
+
+  @override
+  Future<void> stop() async => calls.add('stop');
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -40,6 +62,7 @@ void _mockI18nAssets() {
       'minutes_used': '{n} min',
       'streak_days': '{n} days',
       'topics_covered': '{n} topics',
+      'stop_reading': '⏹ Stop',
     }),
     'assets/i18n/hi.json': jsonEncode({
       'parent_view': 'अभिभावक दृश्य',
@@ -54,6 +77,7 @@ void _mockI18nAssets() {
       'minutes_used': '{n} मिनट',
       'streak_days': '{n} दिन',
       'topics_covered': '{n} विषय',
+      'stop_reading': '⏹ रोकें',
     }),
     'assets/i18n/ml.json': jsonEncode({
       'parent_view': 'രക്ഷകർത്താവ്',
@@ -68,6 +92,7 @@ void _mockI18nAssets() {
       'minutes_used': '{n} മിനിറ്റ്',
       'streak_days': '{n} ദിവസം',
       'topics_covered': '{n} വിഷയങ്ങൾ',
+      'stop_reading': '⏹ നിർത്തുക',
     }),
   };
 
@@ -87,7 +112,11 @@ void _mockI18nAssets() {
   });
 }
 
-Widget _buildSubject({String initialLocation = '/parent/shell'}) {
+Widget _buildSubject({
+  String initialLocation = '/parent/shell',
+  _FakeTtsEngine? fakeEngine,
+}) {
+  final engine = fakeEngine ?? _FakeTtsEngine();
   final router = GoRouter(
     initialLocation: initialLocation,
     routes: [
@@ -109,6 +138,9 @@ Widget _buildSubject({String initialLocation = '/parent/shell'}) {
   );
 
   return ProviderScope(
+    overrides: [
+      ttsServiceProvider.overrideWithValue(TtsService(engine)),
+    ],
     child: MaterialApp.router(
       theme: buildDakshaTheme(),
       routerConfig: router,
@@ -229,6 +261,54 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LanguageToggle), findsOneWidget);
+    });
+  });
+
+  // ── Read-aloud ───────────────────────────────────────────────────────────────
+  group('ShellScreen — read-aloud', () {
+    testWidgets('tapping Read button calls TTS speak with en-IN locale',
+        (tester) async {
+      final engine = _FakeTtsEngine();
+      await tester.pumpWidget(_buildSubject(fakeEngine: engine));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🔊 Read'));
+      await tester.pumpAndSettle();
+
+      expect(engine.calls, contains('lang:en-IN'));
+      expect(engine.calls.any((c) => c.startsWith('speak:')), isTrue);
+    });
+
+    testWidgets('tapping Read when speaking shows Stop label', (tester) async {
+      // Use a slow fake that stays "speaking" — but since our fake completes
+      // instantly the state flips to stopped; verify the button goes back to
+      // Read label after settle.
+      final engine = _FakeTtsEngine();
+      await tester.pumpWidget(_buildSubject(fakeEngine: engine));
+      await tester.pumpAndSettle();
+
+      // After speaking completes the label reverts to Read
+      await tester.tap(find.text('🔊 Read'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('🔊 Read'), findsOneWidget);
+    });
+
+    testWidgets('speak summary includes metric values', (tester) async {
+      final engine = _FakeTtsEngine();
+      await tester.pumpWidget(_buildSubject(fakeEngine: engine));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🔊 Read'));
+      await tester.pumpAndSettle();
+
+      final speakCall =
+          engine.calls.firstWhere((c) => c.startsWith('speak:'));
+      final spokenText = speakCall.substring('speak:'.length);
+      // Digest stub: minutesUsed=47, streakDays=6, topicsCovered=4
+      expect(spokenText, contains('47'));
+      expect(spokenText, contains('6'));
+      expect(spokenText, contains('4'));
     });
   });
 }

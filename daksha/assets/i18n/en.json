@@ -10,5 +10,6 @@
   "ask_daksha": "🎤 Ask Daksha",
   "minutes_used": "{n} min",
   "streak_days": "{n} days",
-  "topics_covered": "{n} topics"
+  "topics_covered": "{n} topics",
+  "stop_reading": "⏹ Stop"
 }

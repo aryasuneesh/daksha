@@ -10,5 +10,6 @@
   "ask_daksha": "🎤 दक्ष से पूछें",
   "minutes_used": "{n} मिनट",
   "streak_days": "{n} दिन",
-  "topics_covered": "{n} विषय"
+  "topics_covered": "{n} विषय",
+  "stop_reading": "⏹ रोकें"
 }

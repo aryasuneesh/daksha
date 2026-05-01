@@ -12,6 +12,8 @@ import 'package:daksha/features/common/top_bar.dart';
 import 'package:daksha/features/parent/widgets/mastery_bar.dart';
 import 'package:daksha/features/parent/widgets/metric_card.dart';
 import 'package:daksha/services/parent/digest_service.dart';
+import 'package:daksha/services/tts_service.dart';
+import 'package:daksha/app/providers.dart';
 
 class ShellScreen extends ConsumerStatefulWidget {
   const ShellScreen({super.key});
@@ -24,6 +26,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     with SecureScreenMixin {
   AppLanguage _language = AppLanguage.en;
   I18n? _i18n;
+  bool _isSpeaking = false;
+  late final TtsService _tts;
 
   // Stub digest — real DB wiring in Task 28.
   final WeeklyDigest _digest = const WeeklyDigest(
@@ -42,6 +46,9 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
   @override
   void initState() {
     super.initState();
+    // Cache TtsService here so tests can override via ProviderScope before
+    // the widget is built. ref is available from initState in ConsumerState.
+    _tts = ref.read(ttsServiceProvider);
     _loadI18n();
   }
 
@@ -53,6 +60,39 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
   void _onLanguageChanged(AppLanguage lang) {
     setState(() => _language = lang);
     _loadI18n();
+  }
+
+  /// Builds a plain-text digest summary for TTS using the loaded i18n strings.
+  String _buildSummary(I18n i18n) {
+    final parts = <String>[
+      i18n.get('minutes_used', n: _digest.minutesUsed),
+      i18n.get('streak_days', n: _digest.streakDays),
+      i18n.get('topics_covered', n: _digest.topicsCovered),
+    ];
+    if (_digest.needsAttention.isNotEmpty) {
+      parts.add(
+          '${i18n.get('needs_attention_title')}: ${_digest.needsAttention.join(', ')}');
+    }
+    return parts.join('. ');
+  }
+
+  Future<void> _toggleReadAloud() async {
+    if (_isSpeaking) {
+      await _tts.stop();
+      if (mounted) setState(() => _isSpeaking = false);
+    } else {
+      final i18n = _i18n;
+      // Build summary even without i18n — use plain number fallback so TTS
+      // is never silently suppressed when the asset bundle hasn't loaded yet.
+      final summary = i18n != null
+          ? _buildSummary(i18n)
+          : '${_digest.minutesUsed} min. '
+              '${_digest.streakDays} days. '
+              '${_digest.topicsCovered} topics.';
+      setState(() => _isSpeaking = true);
+      await _tts.speak(summary, _language);
+      if (mounted) setState(() => _isSpeaking = false);
+    }
   }
 
   @override
@@ -149,8 +189,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
       bottomNavigationBar: BottomActionBar(
         children: [
           DakshaOutlineButton(
-            label: i18n?.get('read_aloud') ?? '🔊 Read',
-            onPressed: () {},
+            label: _isSpeaking
+                ? (i18n?.get('stop_reading') ?? '⏹ Stop')
+                : (i18n?.get('read_aloud') ?? '🔊 Read'),
+            onPressed: _toggleReadAloud,
           ),
           PrimaryButton(
             label: i18n?.get('ask_daksha') ?? '🎤 Ask Daksha',

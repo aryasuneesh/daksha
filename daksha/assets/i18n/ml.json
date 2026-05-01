@@ -10,5 +10,6 @@
   "ask_daksha": "🎤 ദക്ഷനോട് ചോദിക്കുക",
   "minutes_used": "{n} മിനിറ്റ്",
   "streak_days": "{n} ദിവസം",
-  "topics_covered": "{n} വിഷയങ്ങൾ"
+  "topics_covered": "{n} വിഷയങ്ങൾ",
+  "stop_reading": "⏹ നിർത്തുക"
 }
