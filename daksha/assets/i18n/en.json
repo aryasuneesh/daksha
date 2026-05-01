@@ -1,0 +1,14 @@
+{
+  "parent_view": "Parent view",
+  "time_label": "Time",
+  "streak_label": "Streak",
+  "topics_label": "Topics",
+  "mastery_title": "Mastery",
+  "needs_attention_title": "Needs attention",
+  "no_attention_needed": "All topics on track",
+  "read_aloud": "🔊 Read",
+  "ask_daksha": "🎤 Ask Daksha",
+  "minutes_used": "{n} min",
+  "streak_days": "{n} days",
+  "topics_covered": "{n} topics"
+}

@@ -4,6 +4,7 @@ import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/features/capture/capture_screen.dart';
 import 'package:daksha/features/parent/gate_screen.dart';
 import 'package:daksha/features/parent/setup_screen.dart';
+import 'package:daksha/features/parent/shell_screen.dart';
 import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
@@ -44,8 +45,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/parent/shell',
-      builder: (context, state) =>
-          const _SecurePlaceholderScreen(title: 'Parent Shell'),
+      builder: (context, state) => const ShellScreen(),
     ),
     GoRoute(
       path: '/parent/voice',

@@ -1,0 +1,14 @@
+{
+  "parent_view": "अभिभावक दृश्य",
+  "time_label": "समय",
+  "streak_label": "स्ट्रीक",
+  "topics_label": "विषय",
+  "mastery_title": "दक्षता",
+  "needs_attention_title": "ध्यान दें",
+  "no_attention_needed": "सभी विषय सही हैं",
+  "read_aloud": "🔊 पढ़ें",
+  "ask_daksha": "🎤 दक्ष से पूछें",
+  "minutes_used": "{n} मिनट",
+  "streak_days": "{n} दिन",
+  "topics_covered": "{n} विषय"
+}

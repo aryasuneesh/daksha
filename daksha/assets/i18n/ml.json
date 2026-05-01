@@ -1,0 +1,14 @@
+{
+  "parent_view": "രക്ഷകർത്താവ്",
+  "time_label": "സമയം",
+  "streak_label": "സ്ട്രീക്",
+  "topics_label": "വിഷയങ്ങൾ",
+  "mastery_title": "പ്രാവീണ്യം",
+  "needs_attention_title": "ശ്രദ്ധ ആവശ്യമാണ്",
+  "no_attention_needed": "എല്ലാ വിഷയങ്ങളും ശരിയാണ്",
+  "read_aloud": "🔊 വായിക്കുക",
+  "ask_daksha": "🎤 ദക്ഷനോട് ചോദിക്കുക",
+  "minutes_used": "{n} മിനിറ്റ്",
+  "streak_days": "{n} ദിവസം",
+  "topics_covered": "{n} വിഷയങ്ങൾ"
+}
