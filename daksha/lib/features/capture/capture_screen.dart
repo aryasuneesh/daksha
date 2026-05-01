@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:daksha/app/providers.dart';
@@ -40,9 +41,12 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
-  /// Launch the device's native camera app via image_picker.  When the user
-  /// returns with a captured photo, kick off OCR immediately.
+  /// Full capture flow:
+  ///   1. Launch native camera → user takes photo
+  ///   2. Launch uCrop crop UI → user frames just the question
+  ///   3. Run ML Kit + LLM OCR on the cropped image
   Future<void> _onCapture() async {
+    // Step 1 — native camera
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(
       source: ImageSource.camera,
@@ -50,11 +54,31 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     );
     if (photo == null) return; // user cancelled
 
+    // Step 2 — crop to the question area
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: photo.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Select the question',
+          toolbarColor: DT.bg,
+          toolbarWidgetColor: DT.text,
+          activeControlsWidgetColor: DT.primary,
+          backgroundColor: DT.canvasBg,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+          hideBottomControls: false,
+          showCropGrid: true,
+        ),
+      ],
+    );
+    if (croppedFile == null) return; // user cancelled crop
+
+    // Step 3 — OCR on the cropped region
     _ocrNotifier.value = (loading: true, text: null);
     _showOcrSheet();
 
     try {
-      final text = await _runOcr(photo.path);
+      final text = await _runOcr(croppedFile.path);
       if (mounted) {
         _ocrNotifier.value = (
           loading: false,
@@ -146,9 +170,6 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     );
   }
 
-  /// Photo mode: a full-screen prompt that launches the native camera on tap.
-  /// Using the native camera app avoids any viewfinder aspect-ratio issues and
-  /// gives students the camera UX they already know from their device.
   Widget _buildCameraBody() {
     return GestureDetector(
       onTap: _onCapture,
@@ -159,7 +180,6 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Camera icon
             Container(
               width: 80,
               height: 80,
@@ -187,7 +207,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Point your camera at the problem',
+              'You\'ll crop to just the question next',
               style: DakshaTypography.caption.copyWith(
                 color: DT.bg.withValues(alpha: 0.45),
               ),
@@ -264,82 +284,86 @@ class _OcrSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // maxHeight: 85 % of screen so the sheet never tries to exceed the viewport
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
+
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: DT.contentPad,
-          right: DT.contentPad,
-          top: DT.md,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + DT.bottomSafe,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Drag handle ────────────────────────────────────────────────
-            Center(
-              child: Container(
-                width: 32,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: DT.outline,
-                  borderRadius: BorderRadius.circular(2),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: DT.contentPad,
+            right: DT.contentPad,
+            top: DT.md,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + DT.bottomSafe,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Drag handle ──────────────────────────────────────────────
+              Center(
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: DT.outline,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: DT.lg),
+              const SizedBox(height: DT.lg),
 
-            // ── Loading / content ──────────────────────────────────────────
-            if (isLoading) ...[
-              Text(
-                'Reading your problem…',
-                style:
-                    DakshaTypography.body.copyWith(color: DT.muted),
-              ),
-              const SizedBox(height: DT.lg),
-              const LinearProgressIndicator(),
-            ] else ...[
-              Text(
-                'Reading your problem…',
-                style:
-                    DakshaTypography.caption.copyWith(color: DT.muted),
-              ),
-              const SizedBox(height: DT.sm),
-              StandardCard(
-                child: Text(
-                  parsedText ?? '',
-                  style: DakshaTypography.body,
+              // ── Loading / content ────────────────────────────────────────
+              if (isLoading) ...[
+                Text(
+                  'Reading your problem…',
+                  style: DakshaTypography.body.copyWith(color: DT.muted),
                 ),
-              ),
-              const SizedBox(height: DT.lg),
-              Row(
-                children: [
-                  Expanded(
-                    child: DakshaOutlineButton(
-                      label: 'Edit',
-                      onPressed: onEdit,
-                    ),
+                const SizedBox(height: DT.lg),
+                const LinearProgressIndicator(),
+              ] else ...[
+                Text(
+                  'Recognised text',
+                  style: DakshaTypography.caption.copyWith(color: DT.muted),
+                ),
+                const SizedBox(height: DT.sm),
+                StandardCard(
+                  child: Text(
+                    parsedText ?? '',
+                    style: DakshaTypography.body,
                   ),
-                  const SizedBox(width: DT.sm),
-                  Expanded(
-                    child: PrimaryButton(
-                      label: 'Use this ✓',
-                      onPressed: onUse,
+                ),
+                const SizedBox(height: DT.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DakshaOutlineButton(
+                        label: 'Edit',
+                        onPressed: onEdit,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: DT.sm),
+                    Expanded(
+                      child: PrimaryButton(
+                        label: 'Use this ✓',
+                        onPressed: onUse,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: DT.sm),
+
+              // ── "Type instead" always visible ────────────────────────────
+              Center(
+                child: DakshaTextButton(
+                  label: 'Type instead',
+                  onPressed: onTypeInstead,
+                ),
               ),
             ],
-            const SizedBox(height: DT.sm),
-
-            // ── "Type instead" always visible ──────────────────────────────
-            Center(
-              child: DakshaTextButton(
-                label: 'Type instead',
-                onPressed: onTypeInstead,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
