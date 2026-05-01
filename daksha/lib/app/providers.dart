@@ -8,6 +8,7 @@ import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
 import 'package:daksha/services/tts_service.dart';
+import 'package:daksha/services/stt_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -57,4 +58,9 @@ final parentAuthServiceProvider = Provider<ParentAuthService>((ref) {
 /// TTS service — uses the real flutter_tts engine on device.
 final ttsServiceProvider = Provider<TtsService>((ref) {
   return TtsService(FlutterTtsEngine());
+});
+
+/// STT service — uses the real speech_to_text engine on device.
+final sttServiceProvider = Provider<SttService>((ref) {
+  return SttService(SpeechToTextEngine());
 });
