@@ -165,7 +165,7 @@ void main() {
       final prompt = inference.prompts.first;
       expect(
         prompt,
-        startsWith('You are a math/science problem extractor.'),
+        startsWith('You are correcting OCR scan errors in a printed mathematics'),
       );
       final startIdx = prompt.indexOf('<user_data>');
       final endIdx = prompt.indexOf('</user_data>');
@@ -235,7 +235,7 @@ void main() {
       final prompt = inference.prompts.first;
 
       // System-prompt portion must start with the trusted sentence.
-      expect(prompt, startsWith('You are a math/science problem extractor.'));
+      expect(prompt, startsWith('You are correcting OCR scan errors in a printed mathematics'));
 
       final userDataStart = prompt.indexOf('<user_data>');
       final userDataEnd = prompt.indexOf('</user_data>');

@@ -119,13 +119,27 @@ class OcrService {
 
     final response = await engine.generate(
       InferenceRequest(
-        prompt: 'You are a math/science problem extractor.\n'
-            'Extract the core problem statement from the transcription below.\n'
-            'Output only the problem statement — no preamble, no explanation.\n'
+        prompt: 'You are correcting OCR scan errors in a printed mathematics '
+            'or science textbook problem.\n'
+            'OCR makes these predictable mistakes on printed math — fix them:\n'
+            '  • Minus/negative signs: "--" or missing → "−"; '
+            '"--b)" or "b)=" → "(−b) ="\n'
+            '  • Roman numerals misread: (l)/(1) → (i), '
+            '(ll)/(O)/(0) → (ii), (m)/(lll) → (iii)\n'
+            '  • Letter/digit swaps: l↔1, O↔0, S↔5, Z↔2, I↔1\n'
+            '  • Spaces dropped around =, +, −: '
+            '"a=b" → "a = b", "4+bfor" → "a + b for"\n'
+            '  • Merged/garbled words: reconstruct from context '
+            '("vaiues" → "values", "lollowing" → "following")\n'
+            '  • Missing parentheses around negatives: '
+            '"−b" → "(−b)" when the formula requires it\n'
+            'Output ONLY the corrected problem text, preserving all '
+            'numbered sub-parts (i), (ii), (iii), (iv).\n'
+            'Do not add any explanation or commentary.\n'
             '<user_data>\n'
             '$rawText\n'
             '</user_data>',
-        maxTokens: 128,
+        maxTokens: 256,
       ),
     );
 
