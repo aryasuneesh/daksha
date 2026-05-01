@@ -1907,6 +1907,357 @@ class ParentAuthCompanion extends UpdateCompanion<ParentAuthData> {
   }
 }
 
+class $ParentQaTable extends ParentQa
+    with TableInfo<$ParentQaTable, ParentQaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ParentQaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionMeta = const VerificationMeta(
+    'question',
+  );
+  @override
+  late final GeneratedColumn<String> question = GeneratedColumn<String>(
+    'question',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _planMeta = const VerificationMeta('plan');
+  @override
+  late final GeneratedColumn<String> plan = GeneratedColumn<String>(
+    'plan',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _answerMeta = const VerificationMeta('answer');
+  @override
+  late final GeneratedColumn<String> answer = GeneratedColumn<String>(
+    'answer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _askedAtMeta = const VerificationMeta(
+    'askedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> askedAt = GeneratedColumn<DateTime>(
+    'asked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, question, plan, answer, askedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'parent_qa';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ParentQaData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('question')) {
+      context.handle(
+        _questionMeta,
+        question.isAcceptableOrUnknown(data['question']!, _questionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questionMeta);
+    }
+    if (data.containsKey('plan')) {
+      context.handle(
+        _planMeta,
+        plan.isAcceptableOrUnknown(data['plan']!, _planMeta),
+      );
+    }
+    if (data.containsKey('answer')) {
+      context.handle(
+        _answerMeta,
+        answer.isAcceptableOrUnknown(data['answer']!, _answerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_answerMeta);
+    }
+    if (data.containsKey('asked_at')) {
+      context.handle(
+        _askedAtMeta,
+        askedAt.isAcceptableOrUnknown(data['asked_at']!, _askedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_askedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ParentQaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ParentQaData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      question: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question'],
+      )!,
+      plan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plan'],
+      ),
+      answer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answer'],
+      )!,
+      askedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}asked_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ParentQaTable createAlias(String alias) {
+    return $ParentQaTable(attachedDatabase, alias);
+  }
+}
+
+class ParentQaData extends DataClass implements Insertable<ParentQaData> {
+  final String id;
+  final String question;
+  final String? plan;
+  final String answer;
+  final DateTime askedAt;
+  const ParentQaData({
+    required this.id,
+    required this.question,
+    this.plan,
+    required this.answer,
+    required this.askedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['question'] = Variable<String>(question);
+    if (!nullToAbsent || plan != null) {
+      map['plan'] = Variable<String>(plan);
+    }
+    map['answer'] = Variable<String>(answer);
+    map['asked_at'] = Variable<DateTime>(askedAt);
+    return map;
+  }
+
+  ParentQaCompanion toCompanion(bool nullToAbsent) {
+    return ParentQaCompanion(
+      id: Value(id),
+      question: Value(question),
+      plan: plan == null && nullToAbsent ? const Value.absent() : Value(plan),
+      answer: Value(answer),
+      askedAt: Value(askedAt),
+    );
+  }
+
+  factory ParentQaData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ParentQaData(
+      id: serializer.fromJson<String>(json['id']),
+      question: serializer.fromJson<String>(json['question']),
+      plan: serializer.fromJson<String?>(json['plan']),
+      answer: serializer.fromJson<String>(json['answer']),
+      askedAt: serializer.fromJson<DateTime>(json['askedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'question': serializer.toJson<String>(question),
+      'plan': serializer.toJson<String?>(plan),
+      'answer': serializer.toJson<String>(answer),
+      'askedAt': serializer.toJson<DateTime>(askedAt),
+    };
+  }
+
+  ParentQaData copyWith({
+    String? id,
+    String? question,
+    Value<String?> plan = const Value.absent(),
+    String? answer,
+    DateTime? askedAt,
+  }) => ParentQaData(
+    id: id ?? this.id,
+    question: question ?? this.question,
+    plan: plan.present ? plan.value : this.plan,
+    answer: answer ?? this.answer,
+    askedAt: askedAt ?? this.askedAt,
+  );
+  ParentQaData copyWithCompanion(ParentQaCompanion data) {
+    return ParentQaData(
+      id: data.id.present ? data.id.value : this.id,
+      question: data.question.present ? data.question.value : this.question,
+      plan: data.plan.present ? data.plan.value : this.plan,
+      answer: data.answer.present ? data.answer.value : this.answer,
+      askedAt: data.askedAt.present ? data.askedAt.value : this.askedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParentQaData(')
+          ..write('id: $id, ')
+          ..write('question: $question, ')
+          ..write('plan: $plan, ')
+          ..write('answer: $answer, ')
+          ..write('askedAt: $askedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, question, plan, answer, askedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ParentQaData &&
+          other.id == this.id &&
+          other.question == this.question &&
+          other.plan == this.plan &&
+          other.answer == this.answer &&
+          other.askedAt == this.askedAt);
+}
+
+class ParentQaCompanion extends UpdateCompanion<ParentQaData> {
+  final Value<String> id;
+  final Value<String> question;
+  final Value<String?> plan;
+  final Value<String> answer;
+  final Value<DateTime> askedAt;
+  final Value<int> rowid;
+  const ParentQaCompanion({
+    this.id = const Value.absent(),
+    this.question = const Value.absent(),
+    this.plan = const Value.absent(),
+    this.answer = const Value.absent(),
+    this.askedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ParentQaCompanion.insert({
+    required String id,
+    required String question,
+    this.plan = const Value.absent(),
+    required String answer,
+    required DateTime askedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       question = Value(question),
+       answer = Value(answer),
+       askedAt = Value(askedAt);
+  static Insertable<ParentQaData> custom({
+    Expression<String>? id,
+    Expression<String>? question,
+    Expression<String>? plan,
+    Expression<String>? answer,
+    Expression<DateTime>? askedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (question != null) 'question': question,
+      if (plan != null) 'plan': plan,
+      if (answer != null) 'answer': answer,
+      if (askedAt != null) 'asked_at': askedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ParentQaCompanion copyWith({
+    Value<String>? id,
+    Value<String>? question,
+    Value<String?>? plan,
+    Value<String>? answer,
+    Value<DateTime>? askedAt,
+    Value<int>? rowid,
+  }) {
+    return ParentQaCompanion(
+      id: id ?? this.id,
+      question: question ?? this.question,
+      plan: plan ?? this.plan,
+      answer: answer ?? this.answer,
+      askedAt: askedAt ?? this.askedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (question.present) {
+      map['question'] = Variable<String>(question.value);
+    }
+    if (plan.present) {
+      map['plan'] = Variable<String>(plan.value);
+    }
+    if (answer.present) {
+      map['answer'] = Variable<String>(answer.value);
+    }
+    if (askedAt.present) {
+      map['asked_at'] = Variable<DateTime>(askedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ParentQaCompanion(')
+          ..write('id: $id, ')
+          ..write('question: $question, ')
+          ..write('plan: $plan, ')
+          ..write('answer: $answer, ')
+          ..write('askedAt: $askedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1916,6 +2267,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ConversationTurnsTable(this);
   late final $ReviewCardsTable reviewCards = $ReviewCardsTable(this);
   late final $ParentAuthTable parentAuth = $ParentAuthTable(this);
+  late final $ParentQaTable parentQa = $ParentQaTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1926,6 +2278,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     conversationTurns,
     reviewCards,
     parentAuth,
+    parentQa,
   ];
 }
 
@@ -2984,6 +3337,206 @@ typedef $$ParentAuthTableProcessedTableManager =
       ParentAuthData,
       PrefetchHooks Function()
     >;
+typedef $$ParentQaTableCreateCompanionBuilder =
+    ParentQaCompanion Function({
+      required String id,
+      required String question,
+      Value<String?> plan,
+      required String answer,
+      required DateTime askedAt,
+      Value<int> rowid,
+    });
+typedef $$ParentQaTableUpdateCompanionBuilder =
+    ParentQaCompanion Function({
+      Value<String> id,
+      Value<String> question,
+      Value<String?> plan,
+      Value<String> answer,
+      Value<DateTime> askedAt,
+      Value<int> rowid,
+    });
+
+class $$ParentQaTableFilterComposer
+    extends Composer<_$AppDatabase, $ParentQaTable> {
+  $$ParentQaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plan => $composableBuilder(
+    column: $table.plan,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get askedAt => $composableBuilder(
+    column: $table.askedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ParentQaTableOrderingComposer
+    extends Composer<_$AppDatabase, $ParentQaTable> {
+  $$ParentQaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get plan => $composableBuilder(
+    column: $table.plan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get askedAt => $composableBuilder(
+    column: $table.askedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ParentQaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ParentQaTable> {
+  $$ParentQaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get question =>
+      $composableBuilder(column: $table.question, builder: (column) => column);
+
+  GeneratedColumn<String> get plan =>
+      $composableBuilder(column: $table.plan, builder: (column) => column);
+
+  GeneratedColumn<String> get answer =>
+      $composableBuilder(column: $table.answer, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get askedAt =>
+      $composableBuilder(column: $table.askedAt, builder: (column) => column);
+}
+
+class $$ParentQaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ParentQaTable,
+          ParentQaData,
+          $$ParentQaTableFilterComposer,
+          $$ParentQaTableOrderingComposer,
+          $$ParentQaTableAnnotationComposer,
+          $$ParentQaTableCreateCompanionBuilder,
+          $$ParentQaTableUpdateCompanionBuilder,
+          (
+            ParentQaData,
+            BaseReferences<_$AppDatabase, $ParentQaTable, ParentQaData>,
+          ),
+          ParentQaData,
+          PrefetchHooks Function()
+        > {
+  $$ParentQaTableTableManager(_$AppDatabase db, $ParentQaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ParentQaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ParentQaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ParentQaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> question = const Value.absent(),
+                Value<String?> plan = const Value.absent(),
+                Value<String> answer = const Value.absent(),
+                Value<DateTime> askedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ParentQaCompanion(
+                id: id,
+                question: question,
+                plan: plan,
+                answer: answer,
+                askedAt: askedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String question,
+                Value<String?> plan = const Value.absent(),
+                required String answer,
+                required DateTime askedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ParentQaCompanion.insert(
+                id: id,
+                question: question,
+                plan: plan,
+                answer: answer,
+                askedAt: askedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ParentQaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ParentQaTable,
+      ParentQaData,
+      $$ParentQaTableFilterComposer,
+      $$ParentQaTableOrderingComposer,
+      $$ParentQaTableAnnotationComposer,
+      $$ParentQaTableCreateCompanionBuilder,
+      $$ParentQaTableUpdateCompanionBuilder,
+      (
+        ParentQaData,
+        BaseReferences<_$AppDatabase, $ParentQaTable, ParentQaData>,
+      ),
+      ParentQaData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2998,4 +3551,6 @@ class $AppDatabaseManager {
       $$ReviewCardsTableTableManager(_db, _db.reviewCards);
   $$ParentAuthTableTableManager get parentAuth =>
       $$ParentAuthTableTableManager(_db, _db.parentAuth);
+  $$ParentQaTableTableManager get parentQa =>
+      $$ParentQaTableTableManager(_db, _db.parentQa);
 }

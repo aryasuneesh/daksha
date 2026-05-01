@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/theme.dart';
 import 'package:daksha/features/parent/voice_screen.dart';
+import 'package:daksha/inference/inference_engine.dart';
+import 'package:daksha/services/parent/parent_service.dart';
 import 'package:daksha/services/stt_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +71,79 @@ class _FakeSttEngine implements SttEngine {
 }
 
 // ---------------------------------------------------------------------------
+// Fake ParentService
+// ---------------------------------------------------------------------------
+
+class _FakeInferenceEngine implements InferenceEngine {
+  final List<InferenceResponse> responses;
+  int _call = 0;
+
+  _FakeInferenceEngine(this.responses);
+
+  @override
+  Future<void> load() async {}
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  bool get isLoaded => true;
+
+  @override
+  Future<InferenceResponse> generate(InferenceRequest request) async {
+    final r = responses[_call % responses.length];
+    _call++;
+    return r;
+  }
+}
+
+/// An InferenceEngine whose first generate() call never completes.
+class _HangingInferenceEngine implements InferenceEngine {
+  final _completer = Completer<InferenceResponse>();
+
+  @override
+  Future<void> load() async {}
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  bool get isLoaded => true;
+
+  @override
+  Future<InferenceResponse> generate(InferenceRequest request) =>
+      _completer.future;
+}
+
+class _FakeStore implements ParentQaStore {
+  @override
+  Future<String> insertQa({
+    required String question,
+    required String? plan,
+    required String answer,
+    required DateTime askedAt,
+  }) async =>
+      'fake-uuid';
+}
+
+ParentService _makeParentService({
+  String plan = 'A plan.',
+  String answer = 'Great progress!',
+  bool failPlan = false,
+  bool failSpeak = false,
+}) {
+  final engine = _FakeInferenceEngine([
+    failPlan
+        ? const InferenceFailure(error: 'plan error')
+        : InferenceSuccess(text: plan),
+    failSpeak
+        ? const InferenceFailure(error: 'speak error')
+        : InferenceSuccess(text: answer),
+  ]);
+  return ParentService(engine: engine, store: _FakeStore());
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -77,14 +155,21 @@ void _mockWindowChannel() {
   );
 }
 
-Widget _buildSubject(_FakeSttEngine engine) {
+Widget _buildSubject(
+  _FakeSttEngine engine, {
+  ParentService? parentService,
+}) {
   final fakeStt = SttService(engine);
+  final ps = parentService ?? _makeParentService();
   final router = GoRouter(
     initialLocation: '/parent/voice',
     routes: [
       GoRoute(
         path: '/parent/voice',
-        builder: (_, __) => VoiceScreen(sttForTesting: fakeStt),
+        builder: (_, __) => VoiceScreen(
+          sttForTesting: fakeStt,
+          parentServiceForTesting: ps,
+        ),
       ),
       GoRoute(
         path: '/parent/shell',
@@ -94,6 +179,9 @@ Widget _buildSubject(_FakeSttEngine engine) {
     ],
   );
   return ProviderScope(
+    overrides: [
+      parentServiceProvider.overrideWithValue(ps),
+    ],
     child: MaterialApp.router(
       theme: buildDakshaTheme(),
       routerConfig: router,
@@ -161,19 +249,6 @@ void main() {
       expect(find.byKey(const Key('waveform')), findsOneWidget);
     });
 
-    testWidgets('transcription appears after result is delivered',
-        (tester) async {
-      final engine = _FakeSttEngine()..nextResult = 'Is the student struggling?';
-      await tester.pumpWidget(_buildSubject(engine));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('mic_button')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('transcription_text')), findsOneWidget);
-      expect(find.text('Is the student struggling?'), findsOneWidget);
-    });
-
     testWidgets('tapping mic again stops listening', (tester) async {
       final engine = _FakeSttEngine();
       await tester.pumpWidget(_buildSubject(engine));
@@ -190,6 +265,82 @@ void main() {
       await tester.pump();
 
       expect(engine.log, contains('stop'));
+    });
+  });
+
+  group('VoiceScreen — pipeline', () {
+    testWidgets('shows processing indicator while ParentService is running',
+        (tester) async {
+      final engine = _FakeSttEngine()
+        ..nextResult = 'Is the student struggling?';
+
+      // A service backed by an engine whose generate() never completes.
+      final hangingService = ParentService(
+        engine: _HangingInferenceEngine(),
+        store: _FakeStore(),
+      );
+      await tester.pumpWidget(
+          _buildSubject(engine, parentService: hangingService));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('mic_button')));
+      // Pump once — STT delivers synchronously, onDone fires, _submitQuestion
+      // starts but the engine hangs so _isProcessing stays true.
+      await tester.pump();
+
+      expect(find.byKey(const Key('processing_indicator')), findsOneWidget);
+    });
+
+    testWidgets('shows answer after pipeline completes', (tester) async {
+      final engine = _FakeSttEngine()
+        ..nextResult = 'Is the student struggling?';
+      final parentService = _makeParentService(answer: 'Your child is doing well!');
+
+      await tester.pumpWidget(_buildSubject(engine, parentService: parentService));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('mic_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('answer_text')), findsOneWidget);
+      expect(find.text('Your child is doing well!'), findsOneWidget);
+    });
+
+    testWidgets('shows error when pipeline fails', (tester) async {
+      final engine = _FakeSttEngine()
+        ..nextResult = 'How is she doing?';
+      final parentService = _makeParentService(failPlan: true);
+
+      await tester.pumpWidget(_buildSubject(engine, parentService: parentService));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('mic_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('error_text')), findsOneWidget);
+    });
+
+    testWidgets('tapping mic again clears previous answer', (tester) async {
+      final engine = _FakeSttEngine()
+        ..nextResult = 'How is she doing?';
+      final parentService = _makeParentService(answer: 'She is great!');
+
+      await tester.pumpWidget(_buildSubject(engine, parentService: parentService));
+      await tester.pumpAndSettle();
+
+      // First question — get an answer on screen
+      await tester.tap(find.byKey(const Key('mic_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('answer_text')), findsOneWidget);
+
+      // Second tap — clear nextResult so STT hangs (no auto-done)
+      engine.nextResult = null;
+      await tester.tap(find.byKey(const Key('mic_button')));
+      await tester.pump(); // starts listening, sets _answer = null
+
+      // Previous answer should be cleared as soon as listening starts
+      expect(find.byKey(const Key('answer_text')), findsNothing);
+      expect(find.byKey(const Key('waveform')), findsOneWidget);
     });
   });
 

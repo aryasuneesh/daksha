@@ -6,24 +6,28 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
+import 'package:daksha/services/parent/parent_service.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [LearnerProfile, Problems, ConversationTurns, ReviewCards, ParentAuth],
+  tables: [LearnerProfile, Problems, ConversationTurns, ReviewCards, ParentAuth, ParentQa],
 )
-class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore {
+class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore, ParentQaStore {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(parentAuth);
+      }
+      if (from < 3) {
+        await m.createTable(parentQa);
       }
     },
   );
@@ -109,6 +113,30 @@ class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore {
         lockoutUntil: Value(row.lockoutUntil),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ParentQaStore implementation
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<String> insertQa({
+    required String question,
+    required String? plan,
+    required String answer,
+    required DateTime askedAt,
+  }) async {
+    final id = const Uuid().v4();
+    await into(parentQa).insert(
+      ParentQaCompanion.insert(
+        id: id,
+        question: question,
+        plan: Value(plan),
+        answer: answer,
+        askedAt: askedAt,
+      ),
+    );
+    return id;
   }
 }
 

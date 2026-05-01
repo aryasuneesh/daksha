@@ -7,6 +7,7 @@ import 'package:daksha/domain/taxonomy.dart';
 import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
+import 'package:daksha/services/parent/parent_service.dart';
 import 'package:daksha/services/tts_service.dart';
 import 'package:daksha/services/stt_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -63,4 +64,12 @@ final ttsServiceProvider = Provider<TtsService>((ref) {
 /// STT service — uses the real speech_to_text engine on device.
 final sttServiceProvider = Provider<SttService>((ref) {
   return SttService(SpeechToTextEngine());
+});
+
+/// Parent service — 2-shot PLAN+SPEAK pipeline wired to real engine + db.
+/// Must be overridden in tests via ProviderScope.overrides.
+final parentServiceProvider = Provider<ParentService>((ref) {
+  throw UnimplementedError(
+    'parentServiceProvider must be overridden via ProviderScope.overrides',
+  );
 });

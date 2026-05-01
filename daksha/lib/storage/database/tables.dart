@@ -47,6 +47,18 @@ class ReviewCards extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// Parent Q&A: question asked via voice + 2-shot pipeline response
+class ParentQa extends Table {
+  TextColumn get id => text()(); // UUID
+  TextColumn get question => text()(); // parent's spoken question
+  TextColumn get plan => text().nullable()(); // PLAN pass output (internal)
+  TextColumn get answer => text()(); // SPEAK pass output (shown to parent)
+  DateTimeColumn get askedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // Single-row table for parent PIN authentication
 class ParentAuth extends Table {
   // Single row (id always 1)

@@ -7,6 +7,7 @@ import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/core/typography.dart';
 import 'package:daksha/features/common/language_toggle.dart';
 import 'package:daksha/features/common/top_bar.dart';
+import 'package:daksha/services/parent/parent_service.dart';
 import 'package:daksha/services/stt_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -14,10 +15,13 @@ import 'package:daksha/services/stt_service.dart';
 // ---------------------------------------------------------------------------
 
 class VoiceScreen extends ConsumerStatefulWidget {
-  const VoiceScreen({super.key, this.sttForTesting});
+  const VoiceScreen({super.key, this.sttForTesting, this.parentServiceForTesting});
 
   /// Injected in widget tests; production uses [sttServiceProvider].
   final SttService? sttForTesting;
+
+  /// Injected in widget tests; production uses [parentServiceProvider].
+  final ParentService? parentServiceForTesting;
 
   @override
   ConsumerState<VoiceScreen> createState() => _VoiceScreenState();
@@ -26,6 +30,7 @@ class VoiceScreen extends ConsumerStatefulWidget {
 class _VoiceScreenState extends ConsumerState<VoiceScreen>
     with SecureScreenMixin, TickerProviderStateMixin {
   late final SttService _stt;
+  late final ParentService _parentService;
   AppLanguage _language = AppLanguage.en;
 
   bool _initialised = false;
@@ -33,12 +38,19 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
   bool _isListening = false;
   String? _transcription;
 
+  // Pipeline state
+  bool _isProcessing = false;
+  String? _answer;
+  String? _errorMessage;
+
   late final AnimationController _waveCtrl;
 
   @override
   void initState() {
     super.initState();
     _stt = widget.sttForTesting ?? ref.read(sttServiceProvider);
+    _parentService =
+        widget.parentServiceForTesting ?? ref.read(parentServiceProvider);
     // Controller is created but NOT started — only runs while _isListening.
     _waveCtrl = AnimationController(
       vsync: this,
@@ -77,6 +89,8 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
       setState(() {
         _isListening = true;
         _transcription = null;
+        _answer = null;
+        _errorMessage = null;
       });
       _waveCtrl.repeat(reverse: true);
       await _stt.listen(
@@ -88,9 +102,37 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
           if (mounted) {
             _waveCtrl.stop();
             setState(() => _isListening = false);
+            _submitQuestion();
           }
         },
       );
+    }
+  }
+
+  Future<void> _submitQuestion() async {
+    final question = _transcription;
+    if (question == null || question.trim().isEmpty) return;
+
+    setState(() {
+      _isProcessing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _parentService.ask(question);
+      if (mounted) {
+        setState(() {
+          _answer = response.answer;
+          _isProcessing = false;
+        });
+      }
+    } on ParentServiceException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isProcessing = false;
+        });
+      }
     }
   }
 
@@ -124,12 +166,17 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
                   child: Center(
                     child: _isListening
                         ? _WaveformView(controller: _waveCtrl)
-                        : _EmptyState(transcription: _transcription),
+                        : _ContentArea(
+                            transcription: _transcription,
+                            answer: _answer,
+                            isProcessing: _isProcessing,
+                            errorMessage: _errorMessage,
+                          ),
                   ),
                 ),
                 _MicButton(
                   isListening: _isListening,
-                  enabled: _initialised,
+                  enabled: _initialised && !_isProcessing,
                   onTap: _toggleListen,
                 ),
                 const SizedBox(height: DT.bottomSafe),
@@ -143,13 +190,66 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen>
 // Sub-widgets
 // ---------------------------------------------------------------------------
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({this.transcription});
+class _ContentArea extends StatelessWidget {
+  const _ContentArea({
+    this.transcription,
+    this.answer,
+    required this.isProcessing,
+    this.errorMessage,
+  });
 
   final String? transcription;
+  final String? answer;
+  final bool isProcessing;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
+    if (isProcessing) {
+      return const CircularProgressIndicator(
+        key: Key('processing_indicator'),
+      );
+    }
+    if (errorMessage != null) {
+      return Padding(
+        key: const Key('error_text'),
+        padding: const EdgeInsets.all(DT.contentPad),
+        child: Text(
+          errorMessage!,
+          style: DakshaTypography.body.copyWith(color: DT.error),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+    if (answer != null) {
+      return Padding(
+        key: const Key('answer_text'),
+        padding: const EdgeInsets.all(DT.contentPad),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (transcription != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: DT.md),
+                child: Text(
+                  transcription!,
+                  key: const Key('transcription_text'),
+                  style: DakshaTypography.body.copyWith(
+                    color: DT.muted,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            Text(
+              answer!,
+              style: DakshaTypography.body.copyWith(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
     if (transcription != null) {
       return Padding(
         key: const Key('transcription_text'),
