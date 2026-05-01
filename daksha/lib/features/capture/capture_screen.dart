@@ -50,7 +50,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 90,
+      imageQuality: 100, // lossless for OCR — compression artefacts hurt recognition
     );
     if (photo == null) return; // user cancelled
 

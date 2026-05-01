@@ -20,6 +20,12 @@ abstract class TextRecognitionEngine {
 /// The underlying model is bundled in the APK via the
 /// `com.google.mlkit.vision.DEPENDENCIES` meta-data in AndroidManifest.xml,
 /// so no network access is required at runtime.
+///
+/// ## Reading-order reconstruction
+/// ML Kit returns [TextBlock]s in *detection* order (highest-contrast region
+/// first), not in top-to-bottom reading order.  We re-sort by bounding-box
+/// top-Y (then left-X for blocks on the same visual row) before joining lines,
+/// so questions always appear before answers and headers appear before body text.
 class MlKitTextRecognitionEngine implements TextRecognitionEngine {
   final TextRecognizer _recognizer =
       TextRecognizer(script: TextRecognitionScript.latin);
@@ -28,8 +34,40 @@ class MlKitTextRecognitionEngine implements TextRecognitionEngine {
   Future<String?> recognizeText(String imagePath) async {
     final inputImage = InputImage.fromFilePath(imagePath);
     final result = await _recognizer.processImage(inputImage);
-    final text = result.text.trim();
-    return text.isEmpty ? null : text;
+
+    if (result.blocks.isEmpty) return null;
+
+    // Sort blocks into reading order: top-to-bottom, then left-to-right
+    // for blocks whose top edges are within 20 px of each other (same row).
+    final sortedBlocks = List.of(result.blocks)
+      ..sort((a, b) {
+        final aTop = a.boundingBox?.top ?? 0.0;
+        final bTop = b.boundingBox?.top ?? 0.0;
+        if ((aTop - bTop).abs() < 20) {
+          final aLeft = a.boundingBox?.left ?? 0.0;
+          final bLeft = b.boundingBox?.left ?? 0.0;
+          return aLeft.compareTo(bLeft);
+        }
+        return aTop.compareTo(bTop);
+      });
+
+    final lines = <String>[];
+    for (final block in sortedBlocks) {
+      // Sort individual lines within each block top-to-bottom as well.
+      final sortedLines = List.of(block.lines)
+        ..sort((a, b) {
+          final aTop = a.boundingBox?.top ?? 0.0;
+          final bTop = b.boundingBox?.top ?? 0.0;
+          return aTop.compareTo(bTop);
+        });
+
+      for (final line in sortedLines) {
+        final lineText = line.text.trim();
+        if (lineText.isNotEmpty) lines.add(lineText);
+      }
+    }
+
+    return lines.isEmpty ? null : lines.join('\n');
   }
 
   @override
