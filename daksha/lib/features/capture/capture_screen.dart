@@ -1,7 +1,7 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
@@ -22,8 +22,6 @@ class CaptureScreen extends ConsumerStatefulWidget {
 
 class _CaptureScreenState extends ConsumerState<CaptureScreen> {
   bool _photoMode = true;
-  CameraController? _controller;
-  bool _cameraReady = false;
 
   // Type-mode text entry
   final TextEditingController _typeController = TextEditingController();
@@ -34,54 +32,29 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
   );
 
   @override
-  void initState() {
-    super.initState();
-    _initCamera();
-  }
-
-  Future<void> _initCamera() async {
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) return;
-      final controller = CameraController(
-        cameras.first,
-        ResolutionPreset.medium,
-        enableAudio: false,
-      );
-      await controller.initialize();
-      if (!mounted) {
-        await controller.dispose();
-        return;
-      }
-      setState(() {
-        _controller = controller;
-        _cameraReady = true;
-      });
-    } catch (_) {
-      // Camera unavailable (simulator / test) — stay in degraded mode.
-    }
-  }
-
-  @override
   void dispose() {
     _ocrNotifier.dispose();
-    _controller?.dispose();
     _typeController.dispose();
     super.dispose();
   }
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
+  /// Launch the device's native camera app via image_picker.  When the user
+  /// returns with a captured photo, kick off OCR immediately.
   Future<void> _onCapture() async {
-    if (_controller == null || !_cameraReady) return;
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+    );
+    if (photo == null) return; // user cancelled
 
     _ocrNotifier.value = (loading: true, text: null);
     _showOcrSheet();
 
     try {
-      final file = await _controller!.takePicture();
-      // Pass the file path — ML Kit reads the JPEG directly from disk.
-      final text = await _runOcr(file.path);
+      final text = await _runOcr(photo.path);
       if (mounted) {
         _ocrNotifier.value = (
           loading: false,
@@ -173,68 +146,55 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     );
   }
 
+  /// Photo mode: a full-screen prompt that launches the native camera on tap.
+  /// Using the native camera app avoids any viewfinder aspect-ratio issues and
+  /// gives students the camera UX they already know from their device.
   Widget _buildCameraBody() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // ── Camera preview ─────────────────────────────────────────────────
-        // Center + AspectRatio preserves the camera's native aspect ratio even
-        // when Stack's StackFit.expand would otherwise force tight constraints.
-        if (_cameraReady && _controller != null)
-          Center(
-            child: AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: CameraPreview(_controller!),
-            ),
-          )
-        else
-          const ColoredBox(
-            color: DT.canvasBg,
-            child: Center(
-              child: Text(
-                'Camera unavailable',
-                style: TextStyle(color: Colors.white54),
-              ),
-            ),
-          ),
-
-        // ── Alignment guide: 310×200 dashed-style rect ────────────────────
-        Center(
-          child: Container(
-            width: 310,
-            height: 200,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-
-        // ── Capture button ─────────────────────────────────────────────────
-        Positioned(
-          bottom: DT.bottomSafe + DT.lg,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: GestureDetector(
-              onTap: _onCapture,
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: DT.bg,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: DT.outline, width: 2),
+    return GestureDetector(
+      onTap: _onCapture,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: DT.canvasBg,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Camera icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: DT.bg.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: DT.bg.withValues(alpha: 0.4),
+                  width: 1.5,
                 ),
-                child: const Icon(Icons.camera_alt_outlined, color: DT.text),
+              ),
+              child: Icon(
+                Icons.camera_alt_outlined,
+                color: DT.bg.withValues(alpha: 0.8),
+                size: 36,
               ),
             ),
-          ),
+            const SizedBox(height: 24),
+            Text(
+              'Tap to take a photo',
+              style: DakshaTypography.body.copyWith(
+                color: DT.bg.withValues(alpha: 0.8),
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Point your camera at the problem',
+              style: DakshaTypography.caption.copyWith(
+                color: DT.bg.withValues(alpha: 0.45),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
