@@ -1,92 +1,100 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:image/image.dart' as img;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 import 'package:daksha/inference/inference_engine.dart';
 
+// ── Text-recognition engine abstraction ──────────────────────────────────────
+
+/// Abstracts on-device text recognition so [OcrService] can be tested without
+/// the native ML Kit stack.
+abstract class TextRecognitionEngine {
+  /// Return the recognised text from the image at [imagePath], or null if
+  /// nothing legible was found.
+  Future<String?> recognizeText(String imagePath);
+
+  /// Release native resources. Call once after the engine is no longer needed.
+  Future<void> close();
+}
+
+/// Production implementation backed by ML Kit Latin-script text recognition.
+///
+/// The underlying model is bundled in the APK via the
+/// `com.google.mlkit.vision.DEPENDENCIES` meta-data in AndroidManifest.xml,
+/// so no network access is required at runtime.
+class MlKitTextRecognitionEngine implements TextRecognitionEngine {
+  final TextRecognizer _recognizer =
+      TextRecognizer(script: TextRecognitionScript.latin);
+
+  @override
+  Future<String?> recognizeText(String imagePath) async {
+    final inputImage = InputImage.fromFilePath(imagePath);
+    final result = await _recognizer.processImage(inputImage);
+    final text = result.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  @override
+  Future<void> close() => _recognizer.close();
+}
+
+// ── OcrService ────────────────────────────────────────────────────────────────
+
+/// Two-pass on-device OCR service.
+///
+/// **Pass 1 — ML Kit text recognition** (mandatory):
+///   Reads the image file and returns raw OCR text.  Always works; requires
+///   no downloaded model.
+///
+/// **Pass 2 — LLM cleanup** (optional):
+///   If an [InferenceEngine] is supplied, the raw OCR text is sent to the LLM
+///   to extract the core problem statement.  If the engine is absent or the
+///   LLM call fails, Pass 1's raw text is returned unchanged.
+///
+/// Raw OCR text (which may contain adversarial content) is always wrapped in
+/// `<user_data>` tags for the LLM prompt so injected instructions cannot
+/// escape into the trusted system-prompt portion.
 class OcrService {
-  OcrService(this._engine);
+  OcrService({
+    required TextRecognitionEngine recognitionEngine,
+    InferenceEngine? inferenceEngine,
+  })  : _recognition = recognitionEngine,
+        _inference = inferenceEngine;
 
-  final InferenceEngine _engine;
+  final TextRecognitionEngine _recognition;
+  final InferenceEngine? _inference;
 
-  /// Preprocess: decode bytes → resize long edge to 1024 px → strip EXIF.
-  /// Returns the processed bytes (JPEG, quality 90).
-  /// EXIF is stripped implicitly because the image package does not preserve
-  /// metadata when re-encoding.
-  static Uint8List preprocessImage(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) throw ArgumentError('Cannot decode image');
-    final resized = _resizeLongEdge(decoded, 1024);
-    return Uint8List.fromList(img.encodeJpg(resized, quality: 90));
-  }
-
-  static img.Image _resizeLongEdge(img.Image src, int maxEdge) {
-    final longEdge = src.width > src.height ? src.width : src.height;
-    if (longEdge <= maxEdge) return src;
-    final scale = maxEdge / longEdge;
-    return img.copyResize(
-      src,
-      width: (src.width * scale).round(),
-      height: (src.height * scale).round(),
-    );
-  }
-
-  /// Two-pass OCR:
-  ///   pass 1 — verbatim transcription of the image.
-  ///   pass 2 — extract the core problem statement from the transcription.
+  /// Extract the problem text from the image at [imagePath].
   ///
-  /// User-supplied content (image data and transcribed text) is always wrapped
-  /// in `<user_data>` tags so injected instructions cannot escape into the
-  /// system-prompt portion of either call.
-  ///
-  /// Photo bytes are never persisted to disk — only the base-64 string is
-  /// constructed in memory for the request and discarded afterwards.
-  ///
-  /// Returns the interpreted problem text, or null on failure.
-  Future<String?> extractProblemText(Uint8List imageBytes) async {
-    final processed = preprocessImage(imageBytes);
-    final b64 = base64Encode(processed);
+  /// Returns the cleaned problem statement, or the raw OCR text if no LLM
+  /// engine is available, or null if no text could be recognised at all.
+  Future<String?> extractProblemText(String imagePath) async {
+    // ── Pass 1: ML Kit OCR ───────────────────────────────────────────────────
+    final rawText = await _recognition.recognizeText(imagePath);
+    if (rawText == null || rawText.isEmpty) return null;
 
-    // ── Pass 1: verbatim transcription ──────────────────────────────────────
-    final pass1Response = await _engine.generate(
-      InferenceRequest(
-        prompt: 'You are a precise transcription engine.\n'
-            'Transcribe EXACTLY what is written in the image. '
-            'Do not interpret or modify.\n'
-            'Output only the transcribed text.\n'
-            '<user_data>\n'
-            '[image: $b64]\n'
-            '</user_data>',
-        maxTokens: 256,
-      ),
-    );
+    // ── Pass 2: LLM cleanup (optional) ──────────────────────────────────────
+    final engine = _inference;
+    if (engine == null) return rawText;
 
-    final transcribed = pass1Response.when(
-      success: (text, _) => text.trim(),
-      failure: (_) => null,
-    );
-    if (transcribed == null || transcribed.isEmpty) return null;
+    if (!engine.isLoaded) {
+      await engine.load();
+    }
 
-    // ── Pass 2: interpretation ───────────────────────────────────────────────
-    // The transcribed text (which may contain adversarial content such as
-    // "Ignore previous instructions…") is placed entirely inside <user_data>
-    // so the system-prompt portion remains intact and trusted.
-    final pass2Response = await _engine.generate(
+    final response = await engine.generate(
       InferenceRequest(
         prompt: 'You are a math/science problem extractor.\n'
             'Extract the core problem statement from the transcription below.\n'
             'Output only the problem statement — no preamble, no explanation.\n'
             '<user_data>\n'
-            '$transcribed\n'
+            '$rawText\n'
             '</user_data>',
         maxTokens: 128,
       ),
     );
 
-    return pass2Response.when(
-      success: (text, _) => text.trim().isEmpty ? null : text.trim(),
-      failure: (_) => null,
+    // Fall back to raw OCR text on LLM failure rather than returning null.
+    return response.when(
+      success: (text, _) => text.trim().isEmpty ? rawText : text.trim(),
+      failure: (_) => rawText,
     );
   }
 }

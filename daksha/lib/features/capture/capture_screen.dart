@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,9 +80,8 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
 
     try {
       final file = await _controller!.takePicture();
-      final bytes = await file.readAsBytes();
-      // Pass bytes to OCR (no disk persistence — bytes are discarded after use)
-      final text = await _runOcr(bytes);
+      // Pass the file path — ML Kit reads the JPEG directly from disk.
+      final text = await _runOcr(file.path);
       if (mounted) {
         _ocrNotifier.value = (
           loading: false,
@@ -101,17 +98,22 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     }
   }
 
-  /// Delegates to [OcrService] via [engineProvider]. Returns null if the engine
-  /// is not yet loaded (model not downloaded), letting the UI show the fallback.
-  Future<String?> _runOcr(Uint8List bytes) async {
-    final engineAsync = ref.read(engineProvider);
-    final engine = engineAsync.valueOrNull;
-    if (engine == null) return null; // engine not loaded yet
-    if (!engine.isLoaded) {
-      await engine.load();
+  /// Pass 1 uses ML Kit on-device OCR (always works, no model download needed).
+  /// Pass 2 feeds the raw OCR text to the LLM for cleanup, if the engine is
+  /// already loaded — otherwise the raw ML Kit text is returned as-is.
+  Future<String?> _runOcr(String filePath) async {
+    final recognitionEngine = MlKitTextRecognitionEngine();
+    try {
+      final engineAsync = ref.read(engineProvider);
+      final inferenceEngine = engineAsync.valueOrNull;
+      final service = OcrService(
+        recognitionEngine: recognitionEngine,
+        inferenceEngine: inferenceEngine,
+      );
+      return await service.extractProblemText(filePath);
+    } finally {
+      await recognitionEngine.close();
     }
-    final service = OcrService(engine);
-    return service.extractProblemText(bytes);
   }
 
   void _showOcrSheet() {
@@ -176,8 +178,15 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
       fit: StackFit.expand,
       children: [
         // ── Camera preview ─────────────────────────────────────────────────
+        // Center + AspectRatio preserves the camera's native aspect ratio even
+        // when Stack's StackFit.expand would otherwise force tight constraints.
         if (_cameraReady && _controller != null)
-          CameraPreview(_controller!)
+          Center(
+            child: AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: CameraPreview(_controller!),
+            ),
+          )
         else
           const ColoredBox(
             color: DT.canvasBg,

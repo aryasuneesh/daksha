@@ -169,24 +169,30 @@ class _TopBarShell extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
     return Container(
-      height: DT.topBarH,
-      padding: const EdgeInsets.symmetric(horizontal: DT.lg),
+      // No fixed height — let Scaffold inflate this for status-bar space.
+      // topPadding pushes content below the status bar when Scaffold renders
+      // edge-to-edge (Flutter 3.22+ / Android 15+).
+      padding: EdgeInsets.fromLTRB(DT.lg, topPadding, DT.lg, 0),
       decoration: const BoxDecoration(
         color: DT.bg,
         border: Border(bottom: BorderSide(color: DT.outline, width: 1)),
       ),
-      child: Row(
-        children: [
-          left,
-          if (center != null) ...[
-            const Spacer(),
-            center!,
-            const Spacer(),
-          ] else
-            const Spacer(),
-          if (right != null) right!,
-        ],
+      child: SizedBox(
+        height: DT.topBarH,
+        child: Row(
+          children: [
+            left,
+            if (center != null) ...[
+              const Spacer(),
+              center!,
+              const Spacer(),
+            ] else
+              const Spacer(),
+            if (right != null) right!,
+          ],
+        ),
       ),
     );
   }

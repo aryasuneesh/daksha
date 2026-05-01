@@ -32,6 +32,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Bundle the ML Kit Latin text-recognition model in the APK so OCR
+             works fully offline (no network access required at runtime). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
     </application>
     <queries>
         <intent>
