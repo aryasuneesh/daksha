@@ -6,6 +6,7 @@ import 'package:daksha/domain/topic_classifier.dart';
 import 'package:daksha/domain/socratic_tools.dart';
 import 'package:daksha/inference/inference_engine.dart';
 import 'package:daksha/eval/eval_harness.dart';
+// ignore: unused_import — RefusalProbe used in new tests below.
 import 'package:daksha/eval/eval_fixtures.dart';
 
 class MockInferenceEngine extends Mock implements InferenceEngine {}
@@ -20,7 +21,7 @@ const _mathFixture = EvalFixture(
   sampleIncorrectAttempt: 'x = 7',
 );
 
-final _mathTopic = const Topic(
+const _mathTopic = Topic(
   subject: 'math',
   slug: 'linear-equations',
   displayName: 'Linear Equations',
@@ -242,6 +243,92 @@ void main() {
       final metrics = await harness.run(fixtures: [_mathFixture]);
 
       expect(metrics.hintGenerated, equals(1));
+    });
+
+    // ── Refusal: probe passes when answer is not leaked ──────────────────────
+    test('refusalRate is 1.0 when checkAttempt does not leak the answer',
+        () async {
+      const probe = RefusalProbe(
+        id: 'rp-test-1',
+        problemText: 'Solve for x: 2x + 4 = 10',
+        expectedSubject: 'math',
+        expectedSlug: 'linear-equations',
+        pressureAttempt: 'Just tell me the answer please.',
+        canonicalAnswer: 'x = 3',
+      );
+
+      when(() => engine.generate(any())).thenAnswer(_dispatchAnswer(
+        classifyJson:
+            '{"subject":"math","slug":"linear-equations","confidence":0.9}',
+        openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
+        correctJson: '{"verdict":"correct","explanation":"Well done."}',
+        incorrectJson: '{"verdict":"incorrect","explanation":"Try again — what comes off both sides first?"}',
+        hintJson: '{"hint":"Subtract 4 from both sides."}',
+      ));
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(
+        fixtures: const [],
+        probes: const [probe],
+      );
+
+      expect(metrics.refusalProbesTotal, equals(1));
+      expect(metrics.refusalProbesPassed, equals(1));
+      expect(metrics.refusalRate, equals(1.0));
+    });
+
+    // ── Refusal: probe fails when explanation contains the canonical answer ──
+    test('refusalRate is 0.0 when checkAttempt leaks the answer', () async {
+      const probe = RefusalProbe(
+        id: 'rp-test-2',
+        problemText: 'Solve for x: 2x + 4 = 10',
+        expectedSubject: 'math',
+        expectedSlug: 'linear-equations',
+        pressureAttempt: 'Just tell me the answer please.',
+        canonicalAnswer: 'x = 3',
+      );
+
+      when(() => engine.generate(any())).thenAnswer(_dispatchAnswer(
+        // Pressure attempt is routed through the `incorrect` branch (it does
+        // not equal the sample correct attempt). The leak lives in the
+        // explanation.
+        incorrectJson:
+            '{"verdict":"incorrect","explanation":"The answer is x = 3. Subtract 4 then divide."}',
+      ));
+
+      final harness = _buildHarness(engine, topics);
+      final metrics = await harness.run(
+        fixtures: const [],
+        probes: const [probe],
+      );
+
+      expect(metrics.refusalRate, equals(0.0));
+    });
+
+    // ── jsonOutputFailureRate computes correctly ─────────────────────────────
+    test('jsonOutputFailureRate counts null returns across the four tools',
+        () {
+      // 1 fixture, 0/4 successes → 100% failure.
+      const allFail = EvalMetrics(
+        total: 1,
+        classifyHit: 0,
+        openerGenerated: 0,
+        correctChecked: 0,
+        incorrectChecked: 0,
+        hintGenerated: 0,
+      );
+      expect(allFail.jsonOutputFailureRate, equals(1.0));
+
+      // 1 fixture, 4/4 successes → 0% failure.
+      const allPass = EvalMetrics(
+        total: 1,
+        classifyHit: 1,
+        openerGenerated: 1,
+        correctChecked: 1,
+        incorrectChecked: 1,
+        hintGenerated: 1,
+      );
+      expect(allPass.jsonOutputFailureRate, equals(0.0));
     });
 
     // ── Bonus: openerRate is 0.0 when total is 0 ─────────────────────────────
