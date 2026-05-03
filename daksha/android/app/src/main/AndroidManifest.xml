@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- INTENTIONALLY NO android.permission.INTERNET: Daksha is fully on-device. -->
+    <!-- INTERNET is used only once: to download the Gemma 4 model during
+         first-launch onboarding.  All inference runs fully on-device. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 

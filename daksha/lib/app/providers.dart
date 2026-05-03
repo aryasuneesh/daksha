@@ -25,7 +25,10 @@ final dbProvider = FutureProvider<AppDatabase>((ref) async {
 
 final engineProvider = FutureProvider<InferenceEngine>((ref) async {
   final dir = await getApplicationSupportDirectory();
-  final mediaPipePath = p.join(dir.path, 'models', 'gemma3n-e2b-q4.bin');
+  // Gemma 4 E4B model in LiteRT-LM format.
+  // Download from: https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm
+  // Place the .litertlm file at: <app-support>/models/gemma4-e4b-it.litertlm
+  final mediaPipePath = p.join(dir.path, 'models', 'gemma4-e4b-it.litertlm');
   final llamaCppPath = p.join(dir.path, 'models', 'gemma3n-e2b-q4.gguf');
   return EngineFactory.create(
     mediaPipeModelPath: mediaPipePath,

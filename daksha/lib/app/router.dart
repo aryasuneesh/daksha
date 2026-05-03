@@ -6,54 +6,66 @@ import 'package:daksha/features/parent/gate_screen.dart';
 import 'package:daksha/features/parent/setup_screen.dart';
 import 'package:daksha/features/parent/shell_screen.dart';
 import 'package:daksha/features/parent/voice_screen.dart';
+import 'package:daksha/features/setup/model_setup_screen.dart';
 import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
 import 'package:daksha/features/tutor/solved_screen.dart';
 
-final appRouter = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomeScreen(),
-    ),
-    GoRoute(
-      path: '/problem',
-      builder: (context, state) => ProblemScreen(
-        problemText: state.extra as String? ?? '',
+/// Creates the app router.
+///
+/// [needsSetup] — when true the router starts at /setup (first launch, no
+/// model downloaded yet).  After the model is installed the setup screen
+/// navigates to /, from which point the router behaves normally.
+GoRouter createRouter({bool needsSetup = false}) {
+  return GoRouter(
+    initialLocation: needsSetup ? '/setup' : '/',
+    routes: [
+      GoRoute(
+        path: '/setup',
+        builder: (context, state) => const ModelSetupScreen(),
       ),
-    ),
-    GoRoute(
-      path: '/solved',
-      builder: (context, state) => const SolvedScreen(),
-    ),
-    GoRoute(
-      path: '/capture',
-      builder: (context, state) => const CaptureScreen(),
-    ),
-    GoRoute(
-      path: '/dashboard',
-      builder: (context, state) => const DashboardScreen(),
-    ),
-    GoRoute(
-      path: '/parent/gate',
-      builder: (context, state) => const GateScreen(),
-    ),
-    GoRoute(
-      path: '/parent/setup',
-      builder: (context, state) => const SetupScreen(),
-    ),
-    GoRoute(
-      path: '/parent/shell',
-      builder: (context, state) => const ShellScreen(),
-    ),
-    GoRoute(
-      path: '/parent/voice',
-      builder: (context, state) => const VoiceScreen(),
-    ),
-  ],
-);
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/problem',
+        builder: (context, state) => ProblemScreen(
+          problemText: state.extra as String? ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/solved',
+        builder: (context, state) => const SolvedScreen(),
+      ),
+      GoRoute(
+        path: '/capture',
+        builder: (context, state) => const CaptureScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/parent/gate',
+        builder: (context, state) => const GateScreen(),
+      ),
+      GoRoute(
+        path: '/parent/setup',
+        builder: (context, state) => const SetupScreen(),
+      ),
+      GoRoute(
+        path: '/parent/shell',
+        builder: (context, state) => const ShellScreen(),
+      ),
+      GoRoute(
+        path: '/parent/voice',
+        builder: (context, state) => const VoiceScreen(),
+      ),
+    ],
+  );
+}
 
 class _SecurePlaceholderScreen extends StatefulWidget {
   const _SecurePlaceholderScreen({required this.title});

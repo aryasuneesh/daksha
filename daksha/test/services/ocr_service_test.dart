@@ -36,6 +36,9 @@ class _RecordingEngine implements InferenceEngine {
   bool get isLoaded => true;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<void> load() async {}
 
   @override
@@ -61,6 +64,9 @@ class _TwoPassEngine implements InferenceEngine {
   bool get isLoaded => true;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<void> load() async {}
 
   @override
@@ -81,6 +87,9 @@ class _TwoPassEngine implements InferenceEngine {
 class _FailingInferenceEngine implements InferenceEngine {
   @override
   bool get isLoaded => true;
+
+  @override
+  bool get supportsVision => false;
 
   @override
   Future<void> load() async {}

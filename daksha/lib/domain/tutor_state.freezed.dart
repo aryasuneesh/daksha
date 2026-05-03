@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,1653 +9,574 @@ part of 'tutor_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
-
 /// @nodoc
 mixin _$TutorState {
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) => throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) => throw _privateConstructorUsedError;
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorState);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TutorState()';
+}
+
+
 }
 
 /// @nodoc
-abstract class $TutorStateCopyWith<$Res> {
-  factory $TutorStateCopyWith(
-    TutorState value,
-    $Res Function(TutorState) then,
-  ) = _$TutorStateCopyWithImpl<$Res, TutorState>;
+class $TutorStateCopyWith<$Res>  {
+$TutorStateCopyWith(TutorState _, $Res Function(TutorState) __);
 }
 
-/// @nodoc
-class _$TutorStateCopyWithImpl<$Res, $Val extends TutorState>
-    implements $TutorStateCopyWith<$Res> {
-  _$TutorStateCopyWithImpl(this._value, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+/// Adds pattern-matching-related methods to [TutorState].
+extension TutorStatePatterns on TutorState {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TutorIdle value)?  idle,TResult Function( TutorClassifying value)?  classifying,TResult Function( TutorAsking value)?  asking,TResult Function( TutorChecking value)?  checking,TResult Function( TutorHinting value)?  hinting,TResult Function( TutorSolved value)?  solved,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case TutorIdle() when idle != null:
+return idle(_that);case TutorClassifying() when classifying != null:
+return classifying(_that);case TutorAsking() when asking != null:
+return asking(_that);case TutorChecking() when checking != null:
+return checking(_that);case TutorHinting() when hinting != null:
+return hinting(_that);case TutorSolved() when solved != null:
+return solved(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TutorIdle value)  idle,required TResult Function( TutorClassifying value)  classifying,required TResult Function( TutorAsking value)  asking,required TResult Function( TutorChecking value)  checking,required TResult Function( TutorHinting value)  hinting,required TResult Function( TutorSolved value)  solved,}){
+final _that = this;
+switch (_that) {
+case TutorIdle():
+return idle(_that);case TutorClassifying():
+return classifying(_that);case TutorAsking():
+return asking(_that);case TutorChecking():
+return checking(_that);case TutorHinting():
+return hinting(_that);case TutorSolved():
+return solved(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TutorIdle value)?  idle,TResult? Function( TutorClassifying value)?  classifying,TResult? Function( TutorAsking value)?  asking,TResult? Function( TutorChecking value)?  checking,TResult? Function( TutorHinting value)?  hinting,TResult? Function( TutorSolved value)?  solved,}){
+final _that = this;
+switch (_that) {
+case TutorIdle() when idle != null:
+return idle(_that);case TutorClassifying() when classifying != null:
+return classifying(_that);case TutorAsking() when asking != null:
+return asking(_that);case TutorChecking() when checking != null:
+return checking(_that);case TutorHinting() when hinting != null:
+return hinting(_that);case TutorSolved() when solved != null:
+return solved(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)?  hinting,TResult Function( String problemId)?  solved,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case TutorIdle() when idle != null:
+return idle();case TutorClassifying() when classifying != null:
+return classifying(_that.problemText);case TutorAsking() when asking != null:
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved() when solved != null:
+return solved(_that.problemId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)  hinting,required TResult Function( String problemId)  solved,}) {final _that = this;
+switch (_that) {
+case TutorIdle():
+return idle();case TutorClassifying():
+return classifying(_that.problemText);case TutorAsking():
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking():
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting():
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved():
+return solved(_that.problemId);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)?  hinting,TResult? Function( String problemId)?  solved,}) {final _that = this;
+switch (_that) {
+case TutorIdle() when idle != null:
+return idle();case TutorClassifying() when classifying != null:
+return classifying(_that.problemText);case TutorAsking() when asking != null:
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved() when solved != null:
+return solved(_that.problemId);case _:
+  return null;
+
+}
 }
 
-/// @nodoc
-abstract class _$$TutorIdleImplCopyWith<$Res> {
-  factory _$$TutorIdleImplCopyWith(
-    _$TutorIdleImpl value,
-    $Res Function(_$TutorIdleImpl) then,
-  ) = __$$TutorIdleImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$TutorIdleImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorIdleImpl>
-    implements _$$TutorIdleImplCopyWith<$Res> {
-  __$$TutorIdleImplCopyWithImpl(
-    _$TutorIdleImpl _value,
-    $Res Function(_$TutorIdleImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$TutorIdleImpl implements TutorIdle {
-  const _$TutorIdleImpl();
-
-  @override
-  String toString() {
-    return 'TutorState.idle()';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$TutorIdleImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return idle();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return idle?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (idle != null) {
-      return idle();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return idle(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return idle?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (idle != null) {
-      return idle(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class TutorIdle implements TutorState {
-  const factory TutorIdle() = _$TutorIdleImpl;
-}
-
-/// @nodoc
-abstract class _$$TutorClassifyingImplCopyWith<$Res> {
-  factory _$$TutorClassifyingImplCopyWith(
-    _$TutorClassifyingImpl value,
-    $Res Function(_$TutorClassifyingImpl) then,
-  ) = __$$TutorClassifyingImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({String problemText});
-}
-
-/// @nodoc
-class __$$TutorClassifyingImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorClassifyingImpl>
-    implements _$$TutorClassifyingImplCopyWith<$Res> {
-  __$$TutorClassifyingImplCopyWithImpl(
-    _$TutorClassifyingImpl _value,
-    $Res Function(_$TutorClassifyingImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? problemText = null}) {
-    return _then(
-      _$TutorClassifyingImpl(
-        null == problemText
-            ? _value.problemText
-            : problemText // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
 }
 
 /// @nodoc
 
-class _$TutorClassifyingImpl implements TutorClassifying {
-  const _$TutorClassifyingImpl(this.problemText);
 
-  @override
-  final String problemText;
+class TutorIdle implements TutorState {
+  const TutorIdle();
+  
 
-  @override
-  String toString() {
-    return 'TutorState.classifying(problemText: $problemText)';
-  }
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TutorClassifyingImpl &&
-            (identical(other.problemText, problemText) ||
-                other.problemText == problemText));
-  }
 
-  @override
-  int get hashCode => Object.hash(runtimeType, problemText);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TutorClassifyingImplCopyWith<_$TutorClassifyingImpl> get copyWith =>
-      __$$TutorClassifyingImplCopyWithImpl<_$TutorClassifyingImpl>(
-        this,
-        _$identity,
-      );
 
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return classifying(problemText);
-  }
 
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return classifying?.call(problemText);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (classifying != null) {
-      return classifying(problemText);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return classifying(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return classifying?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (classifying != null) {
-      return classifying(this);
-    }
-    return orElse();
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorIdle);
 }
 
-abstract class TutorClassifying implements TutorState {
-  const factory TutorClassifying(final String problemText) =
-      _$TutorClassifyingImpl;
 
-  String get problemText;
+@override
+int get hashCode => runtimeType.hashCode;
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TutorClassifyingImplCopyWith<_$TutorClassifyingImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+String toString() {
+  return 'TutorState.idle()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class TutorClassifying implements TutorState {
+  const TutorClassifying(this.problemText);
+  
+
+ final  String problemText;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorClassifyingCopyWith<TutorClassifying> get copyWith => _$TutorClassifyingCopyWithImpl<TutorClassifying>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorClassifying&&(identical(other.problemText, problemText) || other.problemText == problemText));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,problemText);
+
+@override
+String toString() {
+  return 'TutorState.classifying(problemText: $problemText)';
+}
+
+
 }
 
 /// @nodoc
-abstract class _$$TutorAskingImplCopyWith<$Res> {
-  factory _$$TutorAskingImplCopyWith(
-    _$TutorAskingImpl value,
-    $Res Function(_$TutorAskingImpl) then,
-  ) = __$$TutorAskingImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({String problemText, Topic topic, String opener, String problemId});
+abstract mixin class $TutorClassifyingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorClassifyingCopyWith(TutorClassifying value, $Res Function(TutorClassifying) _then) = _$TutorClassifyingCopyWithImpl;
+@useResult
+$Res call({
+ String problemText
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorClassifyingCopyWithImpl<$Res>
+    implements $TutorClassifyingCopyWith<$Res> {
+  _$TutorClassifyingCopyWithImpl(this._self, this._then);
+
+  final TutorClassifying _self;
+  final $Res Function(TutorClassifying) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,}) {
+  return _then(TutorClassifying(
+null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-/// @nodoc
-class __$$TutorAskingImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorAskingImpl>
-    implements _$$TutorAskingImplCopyWith<$Res> {
-  __$$TutorAskingImplCopyWithImpl(
-    _$TutorAskingImpl _value,
-    $Res Function(_$TutorAskingImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? problemText = null,
-    Object? topic = null,
-    Object? opener = null,
-    Object? problemId = null,
-  }) {
-    return _then(
-      _$TutorAskingImpl(
-        problemText: null == problemText
-            ? _value.problemText
-            : problemText // ignore: cast_nullable_to_non_nullable
-                  as String,
-        topic: null == topic
-            ? _value.topic
-            : topic // ignore: cast_nullable_to_non_nullable
-                  as Topic,
-        opener: null == opener
-            ? _value.opener
-            : opener // ignore: cast_nullable_to_non_nullable
-                  as String,
-        problemId: null == problemId
-            ? _value.problemId
-            : problemId // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
 }
 
 /// @nodoc
 
-class _$TutorAskingImpl implements TutorAsking {
-  const _$TutorAskingImpl({
-    required this.problemText,
-    required this.topic,
-    required this.opener,
-    required this.problemId,
-  });
 
-  @override
-  final String problemText;
-  @override
-  final Topic topic;
-  @override
-  final String opener;
-  @override
-  final String problemId;
+class TutorAsking implements TutorState {
+  const TutorAsking({required this.problemText, required this.topic, required this.opener, required this.problemId});
+  
 
-  @override
-  String toString() {
-    return 'TutorState.asking(problemText: $problemText, topic: $topic, opener: $opener, problemId: $problemId)';
-  }
+ final  String problemText;
+ final  Topic topic;
+ final  String opener;
+ final  String problemId;
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TutorAskingImpl &&
-            (identical(other.problemText, problemText) ||
-                other.problemText == problemText) &&
-            (identical(other.topic, topic) || other.topic == topic) &&
-            (identical(other.opener, opener) || other.opener == opener) &&
-            (identical(other.problemId, problemId) ||
-                other.problemId == problemId));
-  }
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorAskingCopyWith<TutorAsking> get copyWith => _$TutorAskingCopyWithImpl<TutorAsking>(this, _$identity);
 
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, problemText, topic, opener, problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TutorAskingImplCopyWith<_$TutorAskingImpl> get copyWith =>
-      __$$TutorAskingImplCopyWithImpl<_$TutorAskingImpl>(this, _$identity);
 
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return asking(problemText, topic, opener, problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return asking?.call(problemText, topic, opener, problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (asking != null) {
-      return asking(problemText, topic, opener, problemId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return asking(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return asking?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (asking != null) {
-      return asking(this);
-    }
-    return orElse();
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorAsking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.problemId, problemId) || other.problemId == problemId));
 }
 
-abstract class TutorAsking implements TutorState {
-  const factory TutorAsking({
-    required final String problemText,
-    required final Topic topic,
-    required final String opener,
-    required final String problemId,
-  }) = _$TutorAskingImpl;
 
-  String get problemText;
-  Topic get topic;
-  String get opener;
-  String get problemId;
+@override
+int get hashCode => Object.hash(runtimeType,problemText,topic,opener,problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TutorAskingImplCopyWith<_$TutorAskingImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+String toString() {
+  return 'TutorState.asking(problemText: $problemText, topic: $topic, opener: $opener, problemId: $problemId)';
+}
+
+
 }
 
 /// @nodoc
-abstract class _$$TutorCheckingImplCopyWith<$Res> {
-  factory _$$TutorCheckingImplCopyWith(
-    _$TutorCheckingImpl value,
-    $Res Function(_$TutorCheckingImpl) then,
-  ) = __$$TutorCheckingImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({
-    String problemText,
-    Topic topic,
-    String attempt,
-    String problemId,
-  });
+abstract mixin class $TutorAskingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorAskingCopyWith(TutorAsking value, $Res Function(TutorAsking) _then) = _$TutorAskingCopyWithImpl;
+@useResult
+$Res call({
+ String problemText, Topic topic, String opener, String problemId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorAskingCopyWithImpl<$Res>
+    implements $TutorAskingCopyWith<$Res> {
+  _$TutorAskingCopyWithImpl(this._self, this._then);
+
+  final TutorAsking _self;
+  final $Res Function(TutorAsking) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? opener = null,Object? problemId = null,}) {
+  return _then(TutorAsking(
+problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
+as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
+as Topic,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
+as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-/// @nodoc
-class __$$TutorCheckingImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorCheckingImpl>
-    implements _$$TutorCheckingImplCopyWith<$Res> {
-  __$$TutorCheckingImplCopyWithImpl(
-    _$TutorCheckingImpl _value,
-    $Res Function(_$TutorCheckingImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? problemText = null,
-    Object? topic = null,
-    Object? attempt = null,
-    Object? problemId = null,
-  }) {
-    return _then(
-      _$TutorCheckingImpl(
-        problemText: null == problemText
-            ? _value.problemText
-            : problemText // ignore: cast_nullable_to_non_nullable
-                  as String,
-        topic: null == topic
-            ? _value.topic
-            : topic // ignore: cast_nullable_to_non_nullable
-                  as Topic,
-        attempt: null == attempt
-            ? _value.attempt
-            : attempt // ignore: cast_nullable_to_non_nullable
-                  as String,
-        problemId: null == problemId
-            ? _value.problemId
-            : problemId // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
 }
 
 /// @nodoc
 
-class _$TutorCheckingImpl implements TutorChecking {
-  const _$TutorCheckingImpl({
-    required this.problemText,
-    required this.topic,
-    required this.attempt,
-    required this.problemId,
-  });
 
-  @override
-  final String problemText;
-  @override
-  final Topic topic;
-  @override
-  final String attempt;
-  @override
-  final String problemId;
+class TutorChecking implements TutorState {
+  const TutorChecking({required this.problemText, required this.topic, required this.attempt, required this.problemId});
+  
 
-  @override
-  String toString() {
-    return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId)';
-  }
+ final  String problemText;
+ final  Topic topic;
+ final  String attempt;
+ final  String problemId;
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TutorCheckingImpl &&
-            (identical(other.problemText, problemText) ||
-                other.problemText == problemText) &&
-            (identical(other.topic, topic) || other.topic == topic) &&
-            (identical(other.attempt, attempt) || other.attempt == attempt) &&
-            (identical(other.problemId, problemId) ||
-                other.problemId == problemId));
-  }
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorCheckingCopyWith<TutorChecking> get copyWith => _$TutorCheckingCopyWithImpl<TutorChecking>(this, _$identity);
 
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, problemText, topic, attempt, problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TutorCheckingImplCopyWith<_$TutorCheckingImpl> get copyWith =>
-      __$$TutorCheckingImplCopyWithImpl<_$TutorCheckingImpl>(this, _$identity);
 
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return checking(problemText, topic, attempt, problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return checking?.call(problemText, topic, attempt, problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (checking != null) {
-      return checking(problemText, topic, attempt, problemId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return checking(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return checking?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (checking != null) {
-      return checking(this);
-    }
-    return orElse();
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorChecking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.attempt, attempt) || other.attempt == attempt)&&(identical(other.problemId, problemId) || other.problemId == problemId));
 }
 
-abstract class TutorChecking implements TutorState {
-  const factory TutorChecking({
-    required final String problemText,
-    required final Topic topic,
-    required final String attempt,
-    required final String problemId,
-  }) = _$TutorCheckingImpl;
 
-  String get problemText;
-  Topic get topic;
-  String get attempt;
-  String get problemId;
+@override
+int get hashCode => Object.hash(runtimeType,problemText,topic,attempt,problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TutorCheckingImplCopyWith<_$TutorCheckingImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+String toString() {
+  return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId)';
+}
+
+
 }
 
 /// @nodoc
-abstract class _$$TutorHintingImplCopyWith<$Res> {
-  factory _$$TutorHintingImplCopyWith(
-    _$TutorHintingImpl value,
-    $Res Function(_$TutorHintingImpl) then,
-  ) = __$$TutorHintingImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({
-    String problemText,
-    Topic topic,
-    int level,
-    String hint,
-    String problemId,
-    DateTime firstHintAt,
-  });
+abstract mixin class $TutorCheckingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorCheckingCopyWith(TutorChecking value, $Res Function(TutorChecking) _then) = _$TutorCheckingCopyWithImpl;
+@useResult
+$Res call({
+ String problemText, Topic topic, String attempt, String problemId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorCheckingCopyWithImpl<$Res>
+    implements $TutorCheckingCopyWith<$Res> {
+  _$TutorCheckingCopyWithImpl(this._self, this._then);
+
+  final TutorChecking _self;
+  final $Res Function(TutorChecking) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? attempt = null,Object? problemId = null,}) {
+  return _then(TutorChecking(
+problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
+as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
+as Topic,attempt: null == attempt ? _self.attempt : attempt // ignore: cast_nullable_to_non_nullable
+as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-/// @nodoc
-class __$$TutorHintingImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorHintingImpl>
-    implements _$$TutorHintingImplCopyWith<$Res> {
-  __$$TutorHintingImplCopyWithImpl(
-    _$TutorHintingImpl _value,
-    $Res Function(_$TutorHintingImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? problemText = null,
-    Object? topic = null,
-    Object? level = null,
-    Object? hint = null,
-    Object? problemId = null,
-    Object? firstHintAt = null,
-  }) {
-    return _then(
-      _$TutorHintingImpl(
-        problemText: null == problemText
-            ? _value.problemText
-            : problemText // ignore: cast_nullable_to_non_nullable
-                  as String,
-        topic: null == topic
-            ? _value.topic
-            : topic // ignore: cast_nullable_to_non_nullable
-                  as Topic,
-        level: null == level
-            ? _value.level
-            : level // ignore: cast_nullable_to_non_nullable
-                  as int,
-        hint: null == hint
-            ? _value.hint
-            : hint // ignore: cast_nullable_to_non_nullable
-                  as String,
-        problemId: null == problemId
-            ? _value.problemId
-            : problemId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        firstHintAt: null == firstHintAt
-            ? _value.firstHintAt
-            : firstHintAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
-      ),
-    );
-  }
 }
 
 /// @nodoc
 
-class _$TutorHintingImpl implements TutorHinting {
-  const _$TutorHintingImpl({
-    required this.problemText,
-    required this.topic,
-    required this.level,
-    required this.hint,
-    required this.problemId,
-    required this.firstHintAt,
-  });
 
-  @override
-  final String problemText;
-  @override
-  final Topic topic;
-  @override
-  final int level;
-  @override
-  final String hint;
-  @override
-  final String problemId;
-  @override
-  final DateTime firstHintAt;
+class TutorHinting implements TutorState {
+  const TutorHinting({required this.problemText, required this.topic, required this.level, required this.hint, required this.problemId, required this.firstHintAt});
+  
 
-  @override
-  String toString() {
-    return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt)';
-  }
+ final  String problemText;
+ final  Topic topic;
+ final  int level;
+ final  String hint;
+ final  String problemId;
+ final  DateTime firstHintAt;
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TutorHintingImpl &&
-            (identical(other.problemText, problemText) ||
-                other.problemText == problemText) &&
-            (identical(other.topic, topic) || other.topic == topic) &&
-            (identical(other.level, level) || other.level == level) &&
-            (identical(other.hint, hint) || other.hint == hint) &&
-            (identical(other.problemId, problemId) ||
-                other.problemId == problemId) &&
-            (identical(other.firstHintAt, firstHintAt) ||
-                other.firstHintAt == firstHintAt));
-  }
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorHintingCopyWith<TutorHinting> get copyWith => _$TutorHintingCopyWithImpl<TutorHinting>(this, _$identity);
 
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    problemText,
-    topic,
-    level,
-    hint,
-    problemId,
-    firstHintAt,
-  );
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TutorHintingImplCopyWith<_$TutorHintingImpl> get copyWith =>
-      __$$TutorHintingImplCopyWithImpl<_$TutorHintingImpl>(this, _$identity);
 
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return hinting(problemText, topic, level, hint, problemId, firstHintAt);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return hinting?.call(
-      problemText,
-      topic,
-      level,
-      hint,
-      problemId,
-      firstHintAt,
-    );
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (hinting != null) {
-      return hinting(problemText, topic, level, hint, problemId, firstHintAt);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return hinting(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return hinting?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (hinting != null) {
-      return hinting(this);
-    }
-    return orElse();
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorHinting&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.level, level) || other.level == level)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.firstHintAt, firstHintAt) || other.firstHintAt == firstHintAt));
 }
 
-abstract class TutorHinting implements TutorState {
-  const factory TutorHinting({
-    required final String problemText,
-    required final Topic topic,
-    required final int level,
-    required final String hint,
-    required final String problemId,
-    required final DateTime firstHintAt,
-  }) = _$TutorHintingImpl;
 
-  String get problemText;
-  Topic get topic;
-  int get level;
-  String get hint;
-  String get problemId;
-  DateTime get firstHintAt;
+@override
+int get hashCode => Object.hash(runtimeType,problemText,topic,level,hint,problemId,firstHintAt);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TutorHintingImplCopyWith<_$TutorHintingImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+String toString() {
+  return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt)';
+}
+
+
 }
 
 /// @nodoc
-abstract class _$$TutorSolvedImplCopyWith<$Res> {
-  factory _$$TutorSolvedImplCopyWith(
-    _$TutorSolvedImpl value,
-    $Res Function(_$TutorSolvedImpl) then,
-  ) = __$$TutorSolvedImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({String problemId});
+abstract mixin class $TutorHintingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorHintingCopyWith(TutorHinting value, $Res Function(TutorHinting) _then) = _$TutorHintingCopyWithImpl;
+@useResult
+$Res call({
+ String problemText, Topic topic, int level, String hint, String problemId, DateTime firstHintAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorHintingCopyWithImpl<$Res>
+    implements $TutorHintingCopyWith<$Res> {
+  _$TutorHintingCopyWithImpl(this._self, this._then);
+
+  final TutorHinting _self;
+  final $Res Function(TutorHinting) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? level = null,Object? hint = null,Object? problemId = null,Object? firstHintAt = null,}) {
+  return _then(TutorHinting(
+problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
+as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
+as Topic,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
+as int,hint: null == hint ? _self.hint : hint // ignore: cast_nullable_to_non_nullable
+as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,firstHintAt: null == firstHintAt ? _self.firstHintAt : firstHintAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
 }
 
-/// @nodoc
-class __$$TutorSolvedImplCopyWithImpl<$Res>
-    extends _$TutorStateCopyWithImpl<$Res, _$TutorSolvedImpl>
-    implements _$$TutorSolvedImplCopyWith<$Res> {
-  __$$TutorSolvedImplCopyWithImpl(
-    _$TutorSolvedImpl _value,
-    $Res Function(_$TutorSolvedImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({Object? problemId = null}) {
-    return _then(
-      _$TutorSolvedImpl(
-        problemId: null == problemId
-            ? _value.problemId
-            : problemId // ignore: cast_nullable_to_non_nullable
-                  as String,
-      ),
-    );
-  }
 }
 
 /// @nodoc
 
-class _$TutorSolvedImpl implements TutorSolved {
-  const _$TutorSolvedImpl({required this.problemId});
 
-  @override
-  final String problemId;
+class TutorSolved implements TutorState {
+  const TutorSolved({required this.problemId});
+  
 
-  @override
-  String toString() {
-    return 'TutorState.solved(problemId: $problemId)';
-  }
+ final  String problemId;
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$TutorSolvedImpl &&
-            (identical(other.problemId, problemId) ||
-                other.problemId == problemId));
-  }
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorSolvedCopyWith<TutorSolved> get copyWith => _$TutorSolvedCopyWithImpl<TutorSolved>(this, _$identity);
 
-  @override
-  int get hashCode => Object.hash(runtimeType, problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$TutorSolvedImplCopyWith<_$TutorSolvedImpl> get copyWith =>
-      __$$TutorSolvedImplCopyWithImpl<_$TutorSolvedImpl>(this, _$identity);
 
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function(String problemText) classifying,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )
-    asking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )
-    checking,
-    required TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )
-    hinting,
-    required TResult Function(String problemId) solved,
-  }) {
-    return solved(problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function(String problemText)? classifying,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult? Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult? Function(String problemId)? solved,
-  }) {
-    return solved?.call(problemId);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function(String problemText)? classifying,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String opener,
-      String problemId,
-    )?
-    asking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      String attempt,
-      String problemId,
-    )?
-    checking,
-    TResult Function(
-      String problemText,
-      Topic topic,
-      int level,
-      String hint,
-      String problemId,
-      DateTime firstHintAt,
-    )?
-    hinting,
-    TResult Function(String problemId)? solved,
-    required TResult orElse(),
-  }) {
-    if (solved != null) {
-      return solved(problemId);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(TutorIdle value) idle,
-    required TResult Function(TutorClassifying value) classifying,
-    required TResult Function(TutorAsking value) asking,
-    required TResult Function(TutorChecking value) checking,
-    required TResult Function(TutorHinting value) hinting,
-    required TResult Function(TutorSolved value) solved,
-  }) {
-    return solved(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(TutorIdle value)? idle,
-    TResult? Function(TutorClassifying value)? classifying,
-    TResult? Function(TutorAsking value)? asking,
-    TResult? Function(TutorChecking value)? checking,
-    TResult? Function(TutorHinting value)? hinting,
-    TResult? Function(TutorSolved value)? solved,
-  }) {
-    return solved?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(TutorIdle value)? idle,
-    TResult Function(TutorClassifying value)? classifying,
-    TResult Function(TutorAsking value)? asking,
-    TResult Function(TutorChecking value)? checking,
-    TResult Function(TutorHinting value)? hinting,
-    TResult Function(TutorSolved value)? solved,
-    required TResult orElse(),
-  }) {
-    if (solved != null) {
-      return solved(this);
-    }
-    return orElse();
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorSolved&&(identical(other.problemId, problemId) || other.problemId == problemId));
 }
 
-abstract class TutorSolved implements TutorState {
-  const factory TutorSolved({required final String problemId}) =
-      _$TutorSolvedImpl;
 
-  String get problemId;
+@override
+int get hashCode => Object.hash(runtimeType,problemId);
 
-  /// Create a copy of TutorState
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$TutorSolvedImplCopyWith<_$TutorSolvedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+String toString() {
+  return 'TutorState.solved(problemId: $problemId)';
 }
+
+
+}
+
+/// @nodoc
+abstract mixin class $TutorSolvedCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorSolvedCopyWith(TutorSolved value, $Res Function(TutorSolved) _then) = _$TutorSolvedCopyWithImpl;
+@useResult
+$Res call({
+ String problemId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorSolvedCopyWithImpl<$Res>
+    implements $TutorSolvedCopyWith<$Res> {
+  _$TutorSolvedCopyWithImpl(this._self, this._then);
+
+  final TutorSolved _self;
+  final $Res Function(TutorSolved) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? problemId = null,}) {
+  return _then(TutorSolved(
+problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+// dart format on

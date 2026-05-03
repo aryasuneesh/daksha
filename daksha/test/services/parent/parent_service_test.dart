@@ -23,6 +23,9 @@ class _FakeInferenceEngine implements InferenceEngine {
   bool get isLoaded => true;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<InferenceResponse> generate(InferenceRequest request) async {
     requests.add(request);
     final response = _responses[_callCount % _responses.length];

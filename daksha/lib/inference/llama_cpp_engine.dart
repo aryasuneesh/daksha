@@ -23,6 +23,9 @@ class LlamaCppEngine implements InferenceEngine {
   bool get isLoaded => _loaded;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<void> load() async {
     final contextParams = ContextParams()..nPredict = defaultMaxTokens;
 

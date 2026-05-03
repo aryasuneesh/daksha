@@ -6,12 +6,13 @@ part 'inference_engine.g.dart';
 // ── Request ──────────────────────────────────────────────────────────────────
 
 @freezed
-class InferenceRequest with _$InferenceRequest {
+sealed class InferenceRequest with _$InferenceRequest {
   const factory InferenceRequest({
     required String prompt,
     @Default(512) int maxTokens,
     @Default(0.7) double temperature,
     String? grammarBnf, // optional GBNF grammar for constrained output
+    String? imagePath, // optional image file path for vision-capable models
   }) = _InferenceRequest;
 
   factory InferenceRequest.fromJson(Map<String, dynamic> json) =>
@@ -38,7 +39,8 @@ abstract interface class InferenceEngine {
   /// Loads the model. Must be called before [generate].
   Future<void> load();
 
-  /// Generates a response. [request.grammarBnf] may be null.
+  /// Generates a response. [request.grammarBnf] and [request.imagePath] may
+  /// be null.
   Future<InferenceResponse> generate(InferenceRequest request);
 
   /// Releases resources.
@@ -46,4 +48,8 @@ abstract interface class InferenceEngine {
 
   /// Returns true if [load] completed successfully.
   bool get isLoaded;
+
+  /// Returns true if this engine can process image inputs via
+  /// [InferenceRequest.imagePath].  Defaults to false for text-only backends.
+  bool get supportsVision;
 }

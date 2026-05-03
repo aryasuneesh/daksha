@@ -4,7 +4,7 @@ import 'package:daksha/app/app.dart';
 
 void main() {
   testWidgets('DakshaApp boots without throwing', (tester) async {
-    await tester.pumpWidget(const ProviderScope(child: DakshaApp()));
+    await tester.pumpWidget(const ProviderScope(child: DakshaApp(needsSetup: false)));
     expect(tester.takeException(), isNull);
   });
 }

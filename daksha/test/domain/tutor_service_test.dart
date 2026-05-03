@@ -21,6 +21,9 @@ class _FakeEngine implements InferenceEngine {
   bool get isLoaded => false;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<void> load() async {}
 
   @override

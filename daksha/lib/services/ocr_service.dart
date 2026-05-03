@@ -41,12 +41,10 @@ class MlKitTextRecognitionEngine implements TextRecognitionEngine {
     // for blocks whose top edges are within 20 px of each other (same row).
     final sortedBlocks = List.of(result.blocks)
       ..sort((a, b) {
-        final aTop = a.boundingBox?.top ?? 0.0;
-        final bTop = b.boundingBox?.top ?? 0.0;
+        final aTop = a.boundingBox.top;
+        final bTop = b.boundingBox.top;
         if ((aTop - bTop).abs() < 20) {
-          final aLeft = a.boundingBox?.left ?? 0.0;
-          final bLeft = b.boundingBox?.left ?? 0.0;
-          return aLeft.compareTo(bLeft);
+          return a.boundingBox.left.compareTo(b.boundingBox.left);
         }
         return aTop.compareTo(bTop);
       });
@@ -55,11 +53,7 @@ class MlKitTextRecognitionEngine implements TextRecognitionEngine {
     for (final block in sortedBlocks) {
       // Sort individual lines within each block top-to-bottom as well.
       final sortedLines = List.of(block.lines)
-        ..sort((a, b) {
-          final aTop = a.boundingBox?.top ?? 0.0;
-          final bTop = b.boundingBox?.top ?? 0.0;
-          return aTop.compareTo(bTop);
-        });
+        ..sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
 
       for (final line in sortedLines) {
         final lineText = line.text.trim();
@@ -76,16 +70,25 @@ class MlKitTextRecognitionEngine implements TextRecognitionEngine {
 
 // ── OcrService ────────────────────────────────────────────────────────────────
 
-/// Two-pass on-device OCR service.
+/// On-device OCR service with two execution paths.
+///
+/// ## Gemma 4 vision path (preferred)
+/// When [inferenceEngine] is provided and `inferenceEngine.supportsVision`
+/// is true, the image is passed directly to the vision-capable LLM.
+/// This produces far better results for printed mathematics because Gemma 4
+/// understands mathematical notation natively.
+///
+/// ## ML Kit fallback path
+/// Used when no vision-capable engine is available.
 ///
 /// **Pass 1 — ML Kit text recognition** (mandatory):
 ///   Reads the image file and returns raw OCR text.  Always works; requires
 ///   no downloaded model.
 ///
 /// **Pass 2 — LLM cleanup** (optional):
-///   If an [InferenceEngine] is supplied, the raw OCR text is sent to the LLM
-///   to extract the core problem statement.  If the engine is absent or the
-///   LLM call fails, Pass 1's raw text is returned unchanged.
+///   If an [InferenceEngine] is supplied (text-only), the raw OCR text is
+///   sent to the LLM to fix OCR errors specific to printed mathematics.
+///   Falls back to raw ML Kit text on failure.
 ///
 /// Raw OCR text (which may contain adversarial content) is always wrapped in
 /// `<user_data>` tags for the LLM prompt so injected instructions cannot
@@ -102,20 +105,54 @@ class OcrService {
 
   /// Extract the problem text from the image at [imagePath].
   ///
-  /// Returns the cleaned problem statement, or the raw OCR text if no LLM
-  /// engine is available, or null if no text could be recognised at all.
+  /// Returns the cleaned problem statement, or null if no text could be
+  /// extracted.
   Future<String?> extractProblemText(String imagePath) async {
-    // ── Pass 1: ML Kit OCR ───────────────────────────────────────────────────
+    final engine = _inference;
+
+    // ── Gemma 4 vision fast path ─────────────────────────────────────────────
+    // When the engine understands images, skip ML Kit entirely and let the
+    // multimodal LLM read the textbook page directly.  This handles fractions,
+    // exponents, Roman numerals, and negative signs that ML Kit mangles.
+    if (engine != null && engine.supportsVision) {
+      if (!engine.isLoaded) await engine.load();
+
+      final response = await engine.generate(
+        InferenceRequest(
+          prompt: 'Read the mathematics or science textbook problem shown in '
+              'this image.\n'
+              'Extract ONLY the exact problem text, including all numbered '
+              'sub-parts: (i), (ii), (iii), (a), (b), etc.\n'
+              'Preserve all mathematical notation exactly as printed, '
+              'including fractions, exponents, square roots, and '
+              'minus/negative signs.\n'
+              'Output ONLY the problem text. '
+              'Do not explain, summarise, or add commentary.',
+          imagePath: imagePath,
+          maxTokens: 512,
+        ),
+      );
+
+      return response.when(
+        success: (text, _) {
+          if (text.trim().isNotEmpty) return text.trim();
+          // Vision returned empty — fall through to ML Kit.
+          return null;
+        },
+        failure: (_) => null, // fall through to ML Kit below
+      );
+    }
+
+    // ── ML Kit path ──────────────────────────────────────────────────────────
+
+    // Pass 1: ML Kit OCR
     final rawText = await _recognition.recognizeText(imagePath);
     if (rawText == null || rawText.isEmpty) return null;
 
-    // ── Pass 2: LLM cleanup (optional) ──────────────────────────────────────
-    final engine = _inference;
+    // Pass 2: LLM cleanup (optional — only for text-only engines)
     if (engine == null) return rawText;
 
-    if (!engine.isLoaded) {
-      await engine.load();
-    }
+    if (!engine.isLoaded) await engine.load();
 
     final response = await engine.generate(
       InferenceRequest(

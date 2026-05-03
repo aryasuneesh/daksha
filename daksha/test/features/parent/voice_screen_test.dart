@@ -90,6 +90,9 @@ class _FakeInferenceEngine implements InferenceEngine {
   bool get isLoaded => true;
 
   @override
+  bool get supportsVision => false;
+
+  @override
   Future<InferenceResponse> generate(InferenceRequest request) async {
     final r = responses[_call % responses.length];
     _call++;
@@ -109,6 +112,9 @@ class _HangingInferenceEngine implements InferenceEngine {
 
   @override
   bool get isLoaded => true;
+
+  @override
+  bool get supportsVision => false;
 
   @override
   Future<InferenceResponse> generate(InferenceRequest request) =>

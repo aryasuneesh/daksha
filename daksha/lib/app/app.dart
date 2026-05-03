@@ -4,7 +4,10 @@ import 'package:daksha/core/theme.dart';
 import 'package:daksha/app/router.dart';
 
 class DakshaApp extends StatelessWidget {
-  const DakshaApp({super.key});
+  const DakshaApp({super.key, required this.needsSetup});
+
+  /// When true the router starts at /setup (model not yet downloaded).
+  final bool needsSetup;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +23,7 @@ class DakshaApp extends StatelessWidget {
         title: 'Daksha',
         debugShowCheckedModeBanner: false,
         theme: buildDakshaTheme(),
-        routerConfig: appRouter,
+        routerConfig: createRouter(needsSetup: needsSetup),
       ),
     );
   }
