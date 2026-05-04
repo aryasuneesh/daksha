@@ -1,3 +1,4 @@
+import 'package:background_downloader/background_downloader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
@@ -59,6 +60,17 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     // for background_downloader to show the foreground service progress bar.
     await _requestNotificationPermission();
 
+    // ── Purge stale WorkManager tasks ────────────────────────────────────────
+    // SmartDownloader generates a DETERMINISTIC taskId from (url, targetPath).
+    // Stale tasks from previous sessions stay in WorkManager across app restarts,
+    // so taskForId() finds them and attaches a new listener instead of creating
+    // a fresh task — resulting in 2+ concurrent workers for the same file,
+    // oscillating progress, and eventual 10-minute WorkManager timeout.
+    // cancelAll() wipes the queue so the next enqueue starts a clean foreground
+    // service task (permitted now that FOREGROUND_SERVICE_DATA_SYNC is in the
+    // manifest).
+    await FileDownloader().cancelAll();
+
     setState(() {
       _state = _SetupState.downloading;
       _progress = 0.0;
@@ -79,7 +91,10 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           .fromNetwork(_kModelUrl, foreground: true)
           .withProgress((pct) {
             if (mounted) {
-              setState(() => _progress = pct / 100.0);
+              // Clamp pct to [0, 100]: SmartDownloader emits –100 as a
+              // sentinel when a task fails, which would set _progress to
+              // –1.0 and crash LinearProgressIndicator.
+              setState(() => _progress = pct.clamp(0, 100) / 100.0);
             }
           })
           .install();

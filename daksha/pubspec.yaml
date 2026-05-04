@@ -44,6 +44,7 @@ dependencies:
   llama_cpp_dart: ^0.2.2
   file_picker: ^11.0.2
   permission_handler: ^12.0.1
+  background_downloader: ^9.5.4
 
 dev_dependencies:
   flutter_test:
