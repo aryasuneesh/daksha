@@ -7,7 +7,11 @@ plugins {
 android {
     namespace = "in.aryasuneesh.daksha"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Pin NDK r28: ensures `libapp.so` (Flutter AOT) is linked with
+    // `--max-page-size=16384`. Inheriting via `flutter.ndkVersion` can pick a
+    // pre-r27 toolchain depending on the local SDK manager state, leaving
+    // LOAD segments aligned to 4 KB and unloadable on 16 KB-page devices.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
