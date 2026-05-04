@@ -1,35 +1,39 @@
-import 'package:background_downloader/background_downloader.dart';
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
 import 'package:daksha/features/common/buttons.dart';
 
-// ── Model download constants ──────────────────────────────────────────────────
+// ── Model constants ───────────────────────────────────────────────────────────
 
 /// HuggingFace URL for the Gemma 4 E4B instruction-tuned LiteRT-LM model.
 ///
-/// Blob page: https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/blob/main/gemma-4-E4B-it.litertlm
-///
-/// Note: this repo may be gated. If downloads return 401/403, accept the
-/// model terms on HuggingFace and pass your token to
-/// [FlutterGemma.initialize(huggingFaceToken: 'hf_...')] in main.dart.
+/// Uses the /resolve/ redirect endpoint which bounces to HuggingFace's CDN
+/// (cdn-lfs-us-1.huggingface.co). dart:io HttpClient follows the redirect
+/// automatically and gets a proper Content-Length for progress tracking.
 const _kModelUrl =
     'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm'
     '/resolve/main/gemma-4-E4B-it.litertlm';
 
-const _kModelSizeLabel = '3.65 GB';
+const _kModelFilename = 'gemma-4-E4B-it.litertlm';
+const _kModelSizeBytes = 3_921_000_000; // ~3.65 GB, used as fallback
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 /// First-launch screen that downloads and installs the Gemma 4 on-device model.
 ///
-/// Shown only when [FlutterGemma.hasActiveModel] returns false.
-/// Navigates to ['/'] automatically once the download completes successfully.
+/// Downloads using dart:io [HttpClient] directly — no WorkManager, no 10-minute
+/// OS timeout, full network speed. After streaming to disk, registers the file
+/// with flutter_gemma via [fromFile], which is instant (no copy).
 class ModelSetupScreen extends StatefulWidget {
   const ModelSetupScreen({super.key});
 
@@ -41,83 +45,155 @@ enum _SetupState { idle, downloading, loadingFile, done, error }
 
 class _ModelSetupScreenState extends State<ModelSetupScreen> {
   _SetupState _state = _SetupState.idle;
-  double _progress = 0.0; // 0.0 – 1.0
+  double _progress = 0.0;   // 0.0 – 1.0
+  int _receivedBytes = 0;
+  int _totalBytes = _kModelSizeBytes;
+  double _speedBytesPerSec = 0.0;
   String? _errorMessage;
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
+  // Allow cancellation by closing the HTTP response.
+  HttpClient? _activeClient;
 
-  /// Request POST_NOTIFICATIONS permission on Android 13+ so background_downloader
-  /// can display the download progress notification in the status bar.
-  Future<void> _requestNotificationPermission() async {
-    final status = await Permission.notification.status;
-    if (!status.isGranted) {
-      await Permission.notification.request();
-    }
+  @override
+  void dispose() {
+    _activeClient?.close(force: true);
+    super.dispose();
   }
 
-  Future<void> _startDownload() async {
-    // Request notification permission first — needed on Android 13+ (API 33)
-    // for background_downloader to show the foreground service progress bar.
-    await _requestNotificationPermission();
+  // ── Download ──────────────────────────────────────────────────────────────────
 
-    // ── Purge stale WorkManager tasks ────────────────────────────────────────
-    // SmartDownloader generates a DETERMINISTIC taskId from (url, targetPath).
-    // Stale tasks from previous sessions stay in WorkManager across app restarts,
-    // so taskForId() finds them and attaches a new listener instead of creating
-    // a fresh task — resulting in 2+ concurrent workers for the same file,
-    // oscillating progress, and eventual 10-minute WorkManager timeout.
-    // cancelAll() wipes the queue so the next enqueue starts a clean foreground
-    // service task (permitted now that FOREGROUND_SERVICE_DATA_SYNC is in the
-    // manifest).
-    await FileDownloader().cancelAll();
+  Future<void> _startDownload() async {
+    // Notification permission: needed on Android 13+ if the user later triggers
+    // any system notification (e.g. from image_picker). Not required for our
+    // own in-process download, but good hygiene to request it at first launch.
+    final status = await Permission.notification.status;
+    if (!status.isGranted) await Permission.notification.request();
 
     setState(() {
       _state = _SetupState.downloading;
       _progress = 0.0;
+      _receivedBytes = 0;
+      _totalBytes = _kModelSizeBytes;
+      _speedBytesPerSec = 0.0;
       _errorMessage = null;
     });
 
+    // Keep CPU + screen alive for the duration of the download.
+    await WakelockPlus.enable();
+
+    File? tempFile;
     try {
+      final dir = await getApplicationSupportDirectory();
+      final modelDir = Directory('${dir.path}/models');
+      await modelDir.create(recursive: true);
+      final targetPath = '${modelDir.path}/$_kModelFilename';
+      tempFile = File(targetPath);
+
+      // Remove any partial file from a previous attempt so we start clean.
+      if (await tempFile.exists()) await tempFile.delete();
+
+      // ── Direct dart:io HTTP stream ──────────────────────────────────────────
+      // Why NOT background_downloader / WorkManager:
+      //   WorkManager background jobs have a hard 10-minute OS timeout on
+      //   Android. A 3.65 GB file on a typical home WiFi connection takes
+      //   15–30 minutes. Despite foreground-service flags and manifest
+      //   permissions, WorkManager's DownloadTaskWorker never promoted to a
+      //   true foreground service on Android 15, consistently timing out at
+      //   ~30% and draining battery through repeated retries.
+      //
+      // dart:io HttpClient runs in the Dart event loop:
+      //   - Zero WorkManager overhead, zero OS job timeout
+      //   - Download runs at full WiFi speed
+      //   - Response body streams in OS-managed TCP chunks directly to disk
+      //   - Progress tracked from Content-Length + bytes received
+      //   - Cancelled cleanly via HttpClient.close(force: true) on dispose
+      final client = HttpClient();
+      _activeClient = client;
+      client.connectionTimeout = const Duration(seconds: 30);
+      client.idleTimeout = const Duration(seconds: 60);
+
+      final request = await client.getUrl(Uri.parse(_kModelUrl));
+      request.headers.add(HttpHeaders.connectionHeader, 'keep-alive');
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned HTTP ${response.statusCode}');
+      }
+
+      final contentLength = response.contentLength; // -1 if unknown
+      if (contentLength > 0) {
+        setState(() => _totalBytes = contentLength);
+      }
+
+      var received = 0;
+      var lastUpdateAt = DateTime.now();
+      var lastSpeedSample = 0;
+
+      final sink = tempFile.openWrite();
+      try {
+        await for (final chunk in response) {
+          if (!mounted) break; // screen disposed while downloading
+          sink.add(chunk);
+          received += chunk.length;
+
+          // Throttle UI updates to ~10 fps to avoid rebuilding on every chunk.
+          final now = DateTime.now();
+          final elapsed = now.difference(lastUpdateAt).inMilliseconds;
+          if (elapsed >= 100) {
+            final speed =
+                (received - lastSpeedSample) / (elapsed / 1000.0); // B/s
+            lastSpeedSample = received;
+            lastUpdateAt = now;
+            if (mounted) {
+              setState(() {
+                _receivedBytes = received;
+                _progress = contentLength > 0
+                    ? (received / contentLength).clamp(0.0, 1.0)
+                    : 0.0;
+                _speedBytesPerSec = speed;
+              });
+            }
+          }
+        }
+      } finally {
+        await sink.flush();
+        await sink.close();
+      }
+      _activeClient = null;
+      client.close();
+
+      // Register the downloaded file with flutter_gemma.
+      // fromFile() does NO copying — it just records the path in
+      // SharedPreferences and sets it as the active model. Instant.
       await FlutterGemma.installModel(
         modelType: ModelType.gemma4,
         fileType: ModelFileType.litertlm,
-      )
-          // foreground: true → forces Android foreground service mode.
-          // Without this, background_downloader falls back to WorkManager
-          // which has a hard 10-minute OS-imposed job timeout — fatal for
-          // a 3.65 GB file. Foreground mode shows a progress notification
-          // and has no OS timeout, but requires FOREGROUND_SERVICE +
-          // FOREGROUND_SERVICE_DATA_SYNC permissions in AndroidManifest.xml.
-          .fromNetwork(_kModelUrl, foreground: true)
-          .withProgress((pct) {
-            if (mounted) {
-              // Clamp pct to [0, 100]: SmartDownloader emits –100 as a
-              // sentinel when a task fails, which would set _progress to
-              // –1.0 and crash LinearProgressIndicator.
-              setState(() => _progress = pct.clamp(0, 100) / 100.0);
-            }
-          })
-          .install();
+      ).fromFile(targetPath).install();
 
       if (mounted) {
         setState(() => _state = _SetupState.done);
-        // Brief pause so the user sees "Ready!" before the redirect.
         await Future<void>.delayed(const Duration(milliseconds: 800));
         if (mounted) context.go('/');
       }
     } catch (e) {
+      // Clean up partial file so the next attempt starts fresh.
+      if (tempFile != null && await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      _activeClient = null;
       if (mounted) {
         setState(() {
           _state = _SetupState.error;
           _errorMessage = e.toString();
         });
       }
+    } finally {
+      await WakelockPlus.disable();
     }
   }
 
-  /// Load from a pre-downloaded file (e.g. pushed via `adb push` or downloaded
-  /// via browser to /sdcard/Download/).  Uses [fromFile] so the plugin registers
-  /// the file in SharedPreferences without re-copying the 3.65 GB blob.
+  /// Load a pre-existing file via file picker (e.g. transferred via USB).
+  /// fromFile() registers it without copying — instant regardless of size.
   Future<void> _loadFromFile() async {
     setState(() {
       _state = _SetupState.loadingFile;
@@ -133,17 +209,14 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       );
 
       if (result == null || result.files.single.path == null) {
-        // User cancelled — return to idle.
         if (mounted) setState(() => _state = _SetupState.idle);
         return;
       }
 
-      final filePath = result.files.single.path!;
-
       await FlutterGemma.installModel(
         modelType: ModelType.gemma4,
         fileType: ModelFileType.litertlm,
-      ).fromFile(filePath).install();
+      ).fromFile(result.files.single.path!).install();
 
       if (mounted) {
         setState(() => _state = _SetupState.done);
@@ -158,6 +231,31 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
         });
       }
     }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  String _formatSpeed(double bps) {
+    if (bps < 1024) return '${bps.toStringAsFixed(0)} B/s';
+    if (bps < 1024 * 1024) return '${(bps / 1024).toStringAsFixed(1)} KB/s';
+    return '${(bps / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+  }
+
+  String _etaLabel() {
+    if (_speedBytesPerSec <= 0 || _totalBytes <= 0) return '';
+    final remaining = _totalBytes - _receivedBytes;
+    final secs = (remaining / _speedBytesPerSec).round();
+    if (secs < 60) return '~${secs}s left';
+    final mins = (secs / 60).ceil();
+    return '~${mins}min left';
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────────
@@ -191,7 +289,6 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // App wordmark
         Text(
           'Daksha',
           style: DakshaTypography.display.copyWith(
@@ -232,7 +329,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           const SizedBox(height: DT.sm),
           Text(
             'Daksha uses Gemma 4 — a small, powerful AI that runs entirely '
-            'on your phone. We need to download it once ($_kModelSizeLabel). '
+            'on your phone. We need to download it once (3.65 GB). '
             'After that, everything works without internet.',
             style: DakshaTypography.body.copyWith(color: DT.text),
           ),
@@ -251,8 +348,6 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             enabled: true,
           ),
           const SizedBox(height: DT.md),
-          // Escape hatch: user may have already downloaded the model via
-          // browser or `adb push /sdcard/Download/gemma-4-E4B-it.litertlm`.
           SecondaryButton(
             label: 'Load from file…',
             onPressed: _loadFromFile,
@@ -266,7 +361,12 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   // ── Downloading card ──────────────────────────────────────────────────────────
 
   Widget _buildProgressCard() {
-    final pct = (_progress * 100).toStringAsFixed(0);
+    final pct = (_progress * 100).toStringAsFixed(1);
+    final received = _formatBytes(_receivedBytes);
+    final total = _formatBytes(_totalBytes);
+    final speed = _speedBytesPerSec > 0 ? _formatSpeed(_speedBytesPerSec) : '';
+    final eta = _etaLabel();
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,20 +377,18 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           ),
           const SizedBox(height: DT.sm),
           Text(
-            'Gemma 4 is being downloaded and installed. '
-            'Please keep the app open.',
+            'Keep the app open. Gemma 4 is downloading directly '
+            'at your full WiFi speed.',
             style: DakshaTypography.body.copyWith(color: DT.muted),
           ),
           const SizedBox(height: DT.lg),
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(DT.radiusBtn),
             child: LinearProgressIndicator(
-              value: _progress,
+              value: _progress > 0 ? _progress : null,
               minHeight: 10,
               backgroundColor: DT.elev2,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(DT.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(DT.primary),
             ),
           ),
           const SizedBox(height: DT.sm),
@@ -298,15 +396,14 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$pct% complete',
-                style:
-                    DakshaTypography.caption.copyWith(color: DT.muted),
+                '$pct%  •  $received / $total',
+                style: DakshaTypography.caption.copyWith(color: DT.muted),
               ),
-              Text(
-                _kModelSizeLabel,
-                style:
-                    DakshaTypography.caption.copyWith(color: DT.muted),
-              ),
+              if (speed.isNotEmpty)
+                Text(
+                  '$speed  $eta',
+                  style: DakshaTypography.caption.copyWith(color: DT.muted),
+                ),
             ],
           ),
         ],
@@ -377,7 +474,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
               const Icon(Icons.error_outline, color: DT.error, size: 24),
               const SizedBox(width: DT.sm),
               Text(
-                'Setup failed',
+                'Download failed',
                 style: DakshaTypography.headingMd.copyWith(color: DT.error),
               ),
             ],
@@ -385,8 +482,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           const SizedBox(height: DT.sm),
           Text(
             'Check your connection and try again. '
-            'Make sure you have at least 3 GB of free storage. '
-            'You can also try "Load from file" if you downloaded the model on a PC.',
+            'Make sure you have at least 5 GB of free storage.',
             style: DakshaTypography.body.copyWith(color: DT.text),
           ),
           if (_errorMessage != null) ...[
@@ -463,3 +559,6 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
+
+// ignore: unused_element
+double _log10(num x) => math.log(x) / math.ln10;

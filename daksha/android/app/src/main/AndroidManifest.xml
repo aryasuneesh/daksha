@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- INTERNET is used only once: to download the Gemma 4 model during
          first-launch onboarding.  All inference runs fully on-device. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -65,6 +66,21 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Override WorkManager's SystemForegroundService to add the dataSync
+             foreground-service type required on Android 14+ (API 34+).
+             WorkManager's own library manifest declares this service WITHOUT
+             a foregroundServiceType attribute.  On Android 14+, starting a
+             foreground service whose type is not declared raises a
+             ForegroundServiceStartNotAllowedException.  The tools:replace
+             attribute tells AGP's manifest merger to use THIS declaration
+             instead of WorkManager's, adding the required type so that
+             background_downloader can promote the download job to a foreground
+             service (no timeout) when Config.runInForeground is set. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:replace="android:foregroundServiceType" />
     </application>
     <queries>
         <intent>
