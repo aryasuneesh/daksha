@@ -58,6 +58,38 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Guard: all three async deps must be ready before tutorServiceProvider
+    // can build. Show a loading indicator until they are; show an error card
+    // if any of them fail (e.g. model file missing after a wipe).
+    final engineAsync = ref.watch(engineProvider);
+    final dbAsync = ref.watch(dbProvider);
+    final taxonomyAsync = ref.watch(taxonomyProvider);
+
+    final allReady =
+        engineAsync.hasValue && dbAsync.hasValue && taxonomyAsync.hasValue;
+
+    if (!allReady) {
+      // Show errors prominently; otherwise a neutral spinner.
+      final firstError = engineAsync.error ?? dbAsync.error ?? taxonomyAsync.error;
+      return Scaffold(
+        backgroundColor: DT.bg,
+        body: SafeArea(
+          child: Center(
+            child: firstError != null
+                ? Padding(
+                    padding: const EdgeInsets.all(DT.contentPad),
+                    child: Text(
+                      'Failed to load model: $firstError',
+                      style: DakshaTypography.body.copyWith(color: DT.error),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     final tutorState = ref.watch(tutorServiceProvider);
 
     // Navigate to solved screen when solved

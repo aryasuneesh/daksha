@@ -4,6 +4,8 @@ import 'package:daksha/storage/database/app_database.dart';
 import 'package:daksha/inference/engine_factory.dart';
 import 'package:daksha/inference/inference_engine.dart';
 import 'package:daksha/domain/taxonomy.dart';
+import 'package:daksha/domain/topic_classifier.dart';
+import 'package:daksha/domain/socratic_tools.dart';
 import 'package:daksha/domain/tutor_service.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/services/parent/parent_auth_service.dart';
@@ -25,37 +27,63 @@ final dbProvider = FutureProvider<AppDatabase>((ref) async {
 
 final engineProvider = FutureProvider<InferenceEngine>((ref) async {
   final dir = await getApplicationSupportDirectory();
-  // Gemma 4 E4B model in LiteRT-LM format.
-  // Download from: https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm
-  // Place the .litertlm file at: <app-support>/models/gemma4-e4b-it.litertlm
-  final mediaPipePath = p.join(dir.path, 'models', 'gemma4-e4b-it.litertlm');
+  // Model filename matches what ModelSetupScreen downloads:
+  //   dart:io HttpClient → <app-support>/models/gemma-4-E4B-it.litertlm
+  // EnginePreference.mediaPipe is used directly (no file-existence check)
+  // because MediaPipeEngine.load() calls FlutterGemma.hasActiveModel() and
+  // uses the registered model path, not the path passed here.  The path here
+  // is only the fallback for a manual adb-push workflow without setup screen.
+  final mediaPipePath = p.join(dir.path, 'models', 'gemma-4-E4B-it.litertlm');
   final llamaCppPath = p.join(dir.path, 'models', 'gemma3n-e2b-q4.gguf');
-  return EngineFactory.create(
+  final engine = EngineFactory.create(
     mediaPipeModelPath: mediaPipePath,
     llamaCppModelPath: llamaCppPath,
+    // Force MediaPipe: skip the file-existence check so we always return a
+    // MediaPipeEngine. Its load() checks hasActiveModel() internally.
+    preference: EnginePreference.mediaPipe,
   );
+  // load() initialises the flutter_gemma InferenceModel — this is where the
+  // model is loaded into GPU/NPU memory. It must complete before any generate()
+  // call can be made.
+  await engine.load();
+  return engine;
 });
 
 final taxonomyProvider = FutureProvider<List<Topic>>((ref) async {
   return TaxonomyLoader.load();
 });
 
-/// Tutor service provider — wired to real deps in Task 20 for UI scaffolding.
-/// Tests and the real app will override this with ProviderScope overrides.
+/// Tutor service — wired to real engine + db + taxonomy.
+///
+/// Uses [AsyncValue.requireValue] so that if any async dep is still loading
+/// this provider enters an error state (instead of crashing with
+/// UnimplementedError). [ProblemScreen] checks the async deps first and shows
+/// a loading indicator until all three are ready.
+///
+/// In tests, override via ProviderScope.overrides with a fake TutorService
+/// backed by a mock engine + in-memory store.
 final tutorServiceProvider =
     StateNotifierProvider<TutorService, TutorState>((ref) {
-  // This throws intentionally — consume only after overriding in tests
-  // or after engine/db are ready. Screens handle loading/error via ref.watch.
-  throw UnimplementedError(
-    'tutorServiceProvider must be overridden via ProviderScope.overrides',
+  final engine = ref.watch(engineProvider).requireValue;
+  final db = ref.watch(dbProvider).requireValue;
+  final topics = ref.watch(taxonomyProvider).requireValue;
+
+  return TutorService(
+    classifier: TopicClassifier(engine: engine, topics: topics),
+    socratic: SocraticService(engine),
+    store: db,
   );
 });
 
-/// Parent auth service provider.
-/// Must be overridden in tests and in the real app's ProviderScope.
+/// Parent auth service — wired to db + secure storage.
+///
+/// Uses [AsyncValue.requireValue] for the same loading-guard reason.
+/// In tests, override via ProviderScope.overrides.
 final parentAuthServiceProvider = Provider<ParentAuthService>((ref) {
-  throw UnimplementedError(
-    'parentAuthServiceProvider must be overridden via ProviderScope.overrides',
+  final db = ref.watch(dbProvider).requireValue;
+  return ParentAuthService(
+    store: db,
+    secureStorage: FlutterSecureStorageAdapter(),
   );
 });
 
@@ -70,9 +98,9 @@ final sttServiceProvider = Provider<SttService>((ref) {
 });
 
 /// Parent service — 2-shot PLAN+SPEAK pipeline wired to real engine + db.
-/// Must be overridden in tests via ProviderScope.overrides.
+/// In tests, override via ProviderScope.overrides.
 final parentServiceProvider = Provider<ParentService>((ref) {
-  throw UnimplementedError(
-    'parentServiceProvider must be overridden via ProviderScope.overrides',
-  );
+  final engine = ref.watch(engineProvider).requireValue;
+  final db = ref.watch(dbProvider).requireValue;
+  return ParentService(engine: engine, store: db);
 });
