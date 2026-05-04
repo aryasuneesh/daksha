@@ -1,6 +1,8 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
@@ -34,7 +36,7 @@ class ModelSetupScreen extends StatefulWidget {
   State<ModelSetupScreen> createState() => _ModelSetupScreenState();
 }
 
-enum _SetupState { idle, downloading, done, error }
+enum _SetupState { idle, downloading, loadingFile, done, error }
 
 class _ModelSetupScreenState extends State<ModelSetupScreen> {
   _SetupState _state = _SetupState.idle;
@@ -43,7 +45,20 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
 
   // ── Actions ──────────────────────────────────────────────────────────────────
 
+  /// Request POST_NOTIFICATIONS permission on Android 13+ so background_downloader
+  /// can display the download progress notification in the status bar.
+  Future<void> _requestNotificationPermission() async {
+    final status = await Permission.notification.status;
+    if (!status.isGranted) {
+      await Permission.notification.request();
+    }
+  }
+
   Future<void> _startDownload() async {
+    // Request notification permission first — needed on Android 13+ (API 33)
+    // for background_downloader to show the foreground service progress bar.
+    await _requestNotificationPermission();
+
     setState(() {
       _state = _SetupState.downloading;
       _progress = 0.0;
@@ -55,7 +70,13 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
         modelType: ModelType.gemma4,
         fileType: ModelFileType.litertlm,
       )
-          .fromNetwork(_kModelUrl)
+          // foreground: true → forces Android foreground service mode.
+          // Without this, background_downloader falls back to WorkManager
+          // which has a hard 10-minute OS-imposed job timeout — fatal for
+          // a 3.65 GB file. Foreground mode shows a progress notification
+          // and has no OS timeout, but requires FOREGROUND_SERVICE +
+          // FOREGROUND_SERVICE_DATA_SYNC permissions in AndroidManifest.xml.
+          .fromNetwork(_kModelUrl, foreground: true)
           .withProgress((pct) {
             if (mounted) {
               setState(() => _progress = pct / 100.0);
@@ -66,6 +87,51 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       if (mounted) {
         setState(() => _state = _SetupState.done);
         // Brief pause so the user sees "Ready!" before the redirect.
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        if (mounted) context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _SetupState.error;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  /// Load from a pre-downloaded file (e.g. pushed via `adb push` or downloaded
+  /// via browser to /sdcard/Download/).  Uses [fromFile] so the plugin registers
+  /// the file in SharedPreferences without re-copying the 3.65 GB blob.
+  Future<void> _loadFromFile() async {
+    setState(() {
+      _state = _SetupState.loadingFile;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['litertlm', 'task'],
+        dialogTitle: 'Select Gemma 4 model file',
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.single.path == null) {
+        // User cancelled — return to idle.
+        if (mounted) setState(() => _state = _SetupState.idle);
+        return;
+      }
+
+      final filePath = result.files.single.path!;
+
+      await FlutterGemma.installModel(
+        modelType: ModelType.gemma4,
+        fileType: ModelFileType.litertlm,
+      ).fromFile(filePath).install();
+
+      if (mounted) {
+        setState(() => _state = _SetupState.done);
         await Future<void>.delayed(const Duration(milliseconds: 800));
         if (mounted) context.go('/');
       }
@@ -131,6 +197,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     return switch (_state) {
       _SetupState.idle => _buildIdleCard(),
       _SetupState.downloading => _buildProgressCard(),
+      _SetupState.loadingFile => _buildLoadingFileCard(),
       _SetupState.done => _buildDoneCard(),
       _SetupState.error => _buildErrorCard(),
     };
@@ -155,17 +222,25 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
             style: DakshaTypography.body.copyWith(color: DT.text),
           ),
           const SizedBox(height: DT.lg),
-          _InfoRow(icon: Icons.wifi_outlined, label: 'Wi-Fi recommended'),
+          const _InfoRow(icon: Icons.wifi_outlined, label: 'Wi-Fi recommended'),
           const SizedBox(height: DT.sm),
-          _InfoRow(
+          const _InfoRow(
               icon: Icons.storage_outlined, label: 'Needs ~5 GB free space'),
           const SizedBox(height: DT.sm),
-          _InfoRow(
+          const _InfoRow(
               icon: Icons.lock_outline, label: 'All learning stays on device'),
           const SizedBox(height: DT.lg * 1.5),
           PrimaryButton(
             label: 'Download Gemma 4',
             onPressed: _startDownload,
+            enabled: true,
+          ),
+          const SizedBox(height: DT.md),
+          // Escape hatch: user may have already downloaded the model via
+          // browser or `adb push /sdcard/Download/gemma-4-E4B-it.litertlm`.
+          SecondaryButton(
+            label: 'Load from file…',
+            onPressed: _loadFromFile,
             enabled: true,
           ),
         ],
@@ -224,6 +299,29 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
     );
   }
 
+  // ── Loading-file card ─────────────────────────────────────────────────────────
+
+  Widget _buildLoadingFileCard() {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Selecting file…',
+            style: DakshaTypography.headingMd.copyWith(color: DT.textStrong),
+          ),
+          const SizedBox(height: DT.sm),
+          Text(
+            'Choose the Gemma 4 model file (.litertlm) from your storage.',
+            style: DakshaTypography.body.copyWith(color: DT.muted),
+          ),
+          const SizedBox(height: DT.lg),
+          const LinearProgressIndicator(),
+        ],
+      ),
+    );
+  }
+
   // ── Done card ─────────────────────────────────────────────────────────────────
 
   Widget _buildDoneCard() {
@@ -264,7 +362,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
               const Icon(Icons.error_outline, color: DT.error, size: 24),
               const SizedBox(width: DT.sm),
               Text(
-                'Download failed',
+                'Setup failed',
                 style: DakshaTypography.headingMd.copyWith(color: DT.error),
               ),
             ],
@@ -272,7 +370,8 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           const SizedBox(height: DT.sm),
           Text(
             'Check your connection and try again. '
-            'Make sure you have at least 3 GB of free storage.',
+            'Make sure you have at least 3 GB of free storage. '
+            'You can also try "Load from file" if you downloaded the model on a PC.',
             style: DakshaTypography.body.copyWith(color: DT.text),
           ),
           if (_errorMessage != null) ...[
@@ -296,6 +395,12 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           PrimaryButton(
             label: 'Try again',
             onPressed: _startDownload,
+            enabled: true,
+          ),
+          const SizedBox(height: DT.md),
+          SecondaryButton(
+            label: 'Load from file…',
+            onPressed: _loadFromFile,
             enabled: true,
           ),
         ],

@@ -37,6 +37,10 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
+/// Alias used by ModelSetupScreen and other screens that need a clearly named
+/// secondary CTA alongside [PrimaryButton].
+typedef SecondaryButton = DakshaOutlineButton;
+
 class DakshaOutlineButton extends StatelessWidget {
   const DakshaOutlineButton({
     super.key,

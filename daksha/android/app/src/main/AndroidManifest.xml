@@ -5,6 +5,24 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Required by background_downloader foreground service (API 28+).
+         Without FOREGROUND_SERVICE the OS refuses to elevate the WorkManager
+         job to a foreground service, leaving it subject to the 10-min
+         background job timeout — fatal for a 3.65 GB model download. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Android 14+ (API 34) requires a typed foreground-service permission
+         that matches the service's foregroundServiceType attribute.
+         background_downloader declares type="dataSync", so we must grant
+         FOREGROUND_SERVICE_DATA_SYNC. Without this the foreground service
+         throws a SecurityException on Pixel 9 Pro XL (Android 15). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Android 13+ (API 33) requires runtime permission to post notifications.
+         background_downloader shows a download progress notification, so we
+         declare it here; we request it at runtime in ModelSetupScreen. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="Daksha"
         android:name="${applicationName}"
