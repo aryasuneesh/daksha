@@ -40,9 +40,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('Daksha full eval', () async {
-    if (_model.isEmpty) {
-      fail('Set --dart-define=DAKSHA_EVAL_MODEL=<path> to run the eval.');
-    }
+    // Empty model path is allowed: flutter_gemma will fall back to its
+    // already-installed active model (set up via ModelSetupScreen). Pass
+    // an explicit path only when you've adb-pushed the file and want the
+    // engine to install it from disk.
+    final modelPath = _model.isEmpty ? '<active-model>' : _model;
 
     final pref = switch (_engine) {
       'mediapipe' => EnginePreference.mediaPipe,
@@ -51,8 +53,8 @@ void main() {
     };
 
     final engine = EngineFactory.create(
-      mediaPipeModelPath: _model,
-      llamaCppModelPath: _model,
+      mediaPipeModelPath: modelPath,
+      llamaCppModelPath: modelPath,
       preference: pref,
     );
 
@@ -72,7 +74,8 @@ void main() {
     // ignore: avoid_print — eval runner is dev-only.
     print(metrics);
 
-    final report = metrics.toMarkdown(engineLabel: _engine, modelPath: _model);
+    final report =
+        metrics.toMarkdown(engineLabel: _engine, modelPath: modelPath);
     final out = await _writeReport(report);
     // ignore: avoid_print
     print('Report: $out');
