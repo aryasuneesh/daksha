@@ -85,6 +85,25 @@ class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore, Pare
   }
 
   // ---------------------------------------------------------------------------
+  // History queries
+  // ---------------------------------------------------------------------------
+
+  /// All problems, most recent first.  Emits whenever any row changes.
+  Stream<List<Problem>> watchAllProblems() {
+    return (select(problems)
+          ..orderBy([(t) => OrderingTerm.desc(t.capturedAt)]))
+        .watch();
+  }
+
+  /// Turns for a single problem, ordered oldest-first for chat replay.
+  Stream<List<ConversationTurn>> watchTurns(String problemId) {
+    return (select(conversationTurns)
+          ..where((t) => t.problemId.equals(problemId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .watch();
+  }
+
+  // ---------------------------------------------------------------------------
   // AuthStore implementation
   // ---------------------------------------------------------------------------
 

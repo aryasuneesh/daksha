@@ -7,6 +7,7 @@ import 'package:daksha/features/parent/setup_screen.dart';
 import 'package:daksha/features/parent/shell_screen.dart';
 import 'package:daksha/features/parent/voice_screen.dart';
 import 'package:daksha/features/setup/model_setup_screen.dart';
+import 'package:daksha/features/history/history_screen.dart';
 import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
@@ -42,6 +43,10 @@ GoRouter createRouter({bool needsSetup = false}) {
       GoRoute(
         path: '/capture',
         builder: (context, state) => const CaptureScreen(),
+      ),
+      GoRoute(
+        path: '/history',
+        builder: (context, state) => const HistoryScreen(),
       ),
       GoRoute(
         path: '/dashboard',

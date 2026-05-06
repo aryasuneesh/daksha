@@ -75,6 +75,20 @@ final tutorServiceProvider =
   );
 });
 
+/// Stream of all problems, most recent first.
+///
+/// Depends on [dbProvider] — emits nothing until the DB is ready, then
+/// auto-updates on every insert/update without manual refresh.
+final problemsProvider = StreamProvider<List<Problem>>((ref) async* {
+  final db = await ref.watch(dbProvider.future);
+  yield* db.watchAllProblems();
+});
+
+/// Count of all problems stored so far (for the home screen badge).
+final problemCountProvider = Provider<int>((ref) {
+  return ref.watch(problemsProvider).whenData((list) => list.length).value ?? 0;
+});
+
 /// Parent auth service — wired to db + secure storage.
 ///
 /// Uses [AsyncValue.requireValue] for the same loading-guard reason.
