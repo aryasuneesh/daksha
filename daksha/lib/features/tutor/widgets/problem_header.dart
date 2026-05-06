@@ -26,7 +26,7 @@ class ProblemHeader extends StatelessWidget {
           const SizedBox(height: DT.xs),
           Text(
             problemText,
-            style: DakshaTypography.mono.copyWith(fontSize: 30),
+            style: DakshaTypography.body,
           ),
         ],
       ),

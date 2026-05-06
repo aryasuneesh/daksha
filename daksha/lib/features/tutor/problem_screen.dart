@@ -143,18 +143,27 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
       ),
       body: Column(
         children: [
-          // Pinned problem header
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: DT.contentPad,
-              vertical: DT.sm,
+          // Pinned problem header — capped at 30% of visible body height so
+          // it never crowds out the conversation area, even for long multi-part
+          // textbook questions.  Scrolls internally if the text is taller than
+          // the cap.  The cap also prevents keyboard-open overflow because the
+          // header cannot expand beyond its allotted fraction.
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.30,
             ),
-            child: ProblemHeader(
-              problemText: displayProblem,
-              label: topicName.isNotEmpty ? topicName : 'Problem',
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DT.contentPad,
+                vertical: DT.sm,
+              ),
+              child: ProblemHeader(
+                problemText: displayProblem,
+                label: topicName.isNotEmpty ? topicName : 'Problem',
+              ),
             ),
           ),
-          // Chat area
+          // Chat area — takes all remaining space above the input row.
           Expanded(
             child: _buildChatArea(tutorState),
           ),
