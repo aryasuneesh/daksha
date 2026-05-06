@@ -26,17 +26,11 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.problemText.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref
-            .read(tutorServiceProvider.notifier)
-            .startProblem(widget.problemText);
-      });
-    }
-  }
+  // Guard so startProblem is only called once, after all async deps are ready.
+  // Triggered from build() — which only runs past the allReady guard — rather
+  // than from initState(), where engineProvider may still be loading or in an
+  // error state (causing requireValue to throw unguarded).
+  bool _problemStarted = false;
 
   @override
   void dispose() {
@@ -91,6 +85,20 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
     }
 
     final tutorState = ref.watch(tutorServiceProvider);
+
+    // All deps are ready — trigger startProblem exactly once.
+    // Using addPostFrameCallback so the first build completes before the
+    // state transition begins (avoids setState-during-build warnings).
+    if (!_problemStarted && widget.problemText.isNotEmpty) {
+      _problemStarted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(tutorServiceProvider.notifier)
+              .startProblem(widget.problemText);
+        }
+      });
+    }
 
     // Navigate to solved screen when solved
     ref.listen<TutorState>(tutorServiceProvider, (_, next) {

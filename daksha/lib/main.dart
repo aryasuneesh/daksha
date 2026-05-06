@@ -26,11 +26,24 @@ void main() async {
     final dir = await getApplicationSupportDirectory();
     final modelFile = File(p.join(dir.path, 'models', _kModelFilename));
     if (await modelFile.exists()) {
-      // fromFile() only writes the path to SharedPreferences — no copy.
-      await FlutterGemma.installModel(
-        modelType: ModelType.gemma4,
-        fileType: ModelFileType.litertlm,
-      ).fromFile(modelFile.path).install();
+      final fileSize = await modelFile.length();
+      // The full Gemma 4 E4B IT LiteRT model is ~3.65 GB (3,921,000,000 bytes).
+      // A file smaller than 3.5 GB is a partial download from a previous failed
+      // attempt (e.g. WorkManager timeout at 33%).  Registering a truncated file
+      // causes MediaPipe to throw "Model may be invalid" at engine load time.
+      // Delete the partial file so ModelSetupScreen shows the download flow
+      // instead of silently bypassing it with a broken registration.
+      if (fileSize >= 3_500_000_000) {
+        // fromFile() only writes the path to SharedPreferences — no copy.
+        await FlutterGemma.installModel(
+          modelType: ModelType.gemma4,
+          fileType: ModelFileType.litertlm,
+        ).fromFile(modelFile.path).install();
+      } else {
+        // Partial/corrupt file — remove it so the user sees the setup screen
+        // and can start a clean download via dart:io HttpClient.
+        await modelFile.delete();
+      }
     }
   }
 
