@@ -67,7 +67,27 @@ class TutorService extends StateNotifier<TutorState> {
       problemText: problemText,
       topic: topic,
     );
-    if (opener == null) return; // stay in classifying on inference failure
+    if (opener == null) {
+      // Inference failed or response was unparseable — fall back to a default
+      // opener so the student isn't stuck on the classifying spinner.
+      final fallbackOpener = SocraticOpener(
+        question: 'What do you think the first step to solving this is?',
+        hint: 'Think about what information you have been given.',
+      );
+      final problemId = await _store.insertProblem(
+        text: problemText,
+        subject: topic.subject,
+        topicSlug: topic.slug,
+        createdAt: _clock(),
+      );
+      state = TutorState.asking(
+        problemText: problemText,
+        topic: topic,
+        opener: fallbackOpener.question,
+        problemId: problemId,
+      );
+      return;
+    }
 
     // Insert only after we have a valid opener.
     final problemId = await _store.insertProblem(

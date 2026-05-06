@@ -56,7 +56,7 @@ Respond with valid JSON only: {"subject": "...", "slug": "...", "confidence": 0.
 
   ClassificationResult? _parseResult(String raw) {
     try {
-      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
       final subject = json['subject'] as String?;
       final slug = json['slug'] as String?;
       final confidence = (json['confidence'] as num?)?.toDouble() ?? 0.0;
@@ -70,5 +70,18 @@ Respond with valid JSON only: {"subject": "...", "slug": "...", "confidence": 0.
     } catch (_) {
       return null;
     }
+  }
+
+  /// Extracts the first JSON object from free-form model output.
+  /// Strips markdown fences and any preamble before the opening brace.
+  static String _extractJson(String raw) {
+    final stripped = raw
+        .replaceAll(RegExp(r'```json\s*', multiLine: true), '')
+        .replaceAll(RegExp(r'```\s*', multiLine: true), '')
+        .trim();
+    final start = stripped.indexOf('{');
+    final end = stripped.lastIndexOf('}');
+    if (start == -1 || end == -1 || end <= start) return raw;
+    return stripped.substring(start, end + 1);
   }
 }

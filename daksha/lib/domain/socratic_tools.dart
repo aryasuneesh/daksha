@@ -112,7 +112,7 @@ Respond with JSON only: {"question": "...", "hint": "..."}''';
   /// Returns null if the JSON is malformed or missing required fields.
   SocraticOpener? _parseOpener(String raw) {
     try {
-      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
       final question = json['question'] as String?;
       final hint = json['hint'] as String?;
       if (question == null || hint == null) return null;
@@ -165,7 +165,7 @@ Is the student correct? Respond with JSON only: {"verdict": "correct|close|incor
   /// or contains an unknown verdict string.
   AttemptFeedback? _parseFeedback(String raw) {
     try {
-      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
       final verdictStr = json['verdict'] as String?;
       final explanation = json['explanation'] as String?;
       if (verdictStr == null || explanation == null) return null;
@@ -230,10 +230,33 @@ Give a hint at level $hintLevel. Respond with JSON only: {"hint": "..."}''';
   /// Returns null if the JSON is malformed or missing the hint field.
   String? _parseHint(String raw) {
     try {
-      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
       return json['hint'] as String?;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Extracts a JSON object from free-form model output.
+  ///
+  /// The MediaPipe LiteRT-LM engine does not support grammar-constrained
+  /// decoding, so Gemma 4 may wrap its JSON in:
+  ///   - markdown code fences: ```json { … } ```
+  ///   - a preamble: "Here is the response: { … }"
+  ///   - trailing text after the closing brace
+  ///
+  /// This helper strips fences and finds the first '{' … last '}' span so
+  /// [jsonDecode] receives a clean object string regardless of wrapping.
+  static String _extractJson(String raw) {
+    // Strip markdown code fences (```json … ``` or ``` … ```)
+    final stripped = raw
+        .replaceAll(RegExp(r'```json\s*', multiLine: true), '')
+        .replaceAll(RegExp(r'```\s*', multiLine: true), '')
+        .trim();
+
+    final start = stripped.indexOf('{');
+    final end = stripped.lastIndexOf('}');
+    if (start == -1 || end == -1 || end <= start) return raw;
+    return stripped.substring(start, end + 1);
   }
 }
