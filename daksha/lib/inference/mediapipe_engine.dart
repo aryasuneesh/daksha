@@ -27,10 +27,14 @@ class MediaPipeEngine implements InferenceEngine {
   @override
   bool get isLoaded => _loaded;
 
-  /// Gemma 4 natively understands images — vision is always available once
-  /// [load] completes.
+  /// Vision support requires the LiteRT-LM native SDK to support the vision
+  /// encoder format bundled in the active model file.  The HuggingFace
+  /// gemma-4-E4B-it.litertlm was updated to LiteRT-LM v1.5 (3 vision
+  /// signatures) which is not yet supported by flutter_gemma ≤0.14.5.
+  /// We load in text-only mode to avoid the "Vision Encoder must have exactly
+  /// one signature" crash; OCR still works via ML Kit on the capture screen.
   @override
-  bool get supportsVision => true;
+  bool get supportsVision => false;
 
   @override
   Future<void> load() async {
@@ -47,11 +51,15 @@ class MediaPipeEngine implements InferenceEngine {
       ).fromFile(modelPath).install();
     }
 
-    // Declare vision capability so the underlying LiteRT-LM session
-    // allocates the vision encoder — required even for text-only requests.
+    // Load in text-only mode: the LiteRT-LM v1.5 vision encoder format
+    // (3 signatures: vision_70/140/280) is not yet supported by the native
+    // SDK bundled in flutter_gemma ≤0.14.5.  supportImage: false causes the
+    // engine to skip vision-encoder initialisation, avoiding the
+    // "must have exactly one signature but got 3" native crash.
+    // When flutter_gemma is updated to support v1.5, flip this back to true.
     _model = await FlutterGemma.getActiveModel(
       maxTokens: _maxTokens,
-      supportImage: true,
+      supportImage: false,
     );
     _loaded = true;
   }
@@ -62,32 +70,19 @@ class MediaPipeEngine implements InferenceEngine {
       return const InferenceResponse.failure(error: 'Engine not loaded');
     }
     try {
-      final isVision = request.imagePath != null;
-
       // Fresh session per call — no cross-contamination between PLAN / SPEAK /
       // OCR passes.
+      // Vision modality is disabled (supportImage: false at load time) due to
+      // LiteRT-LM v1.5 multi-signature incompatibility in flutter_gemma ≤0.14.5.
       final session = await _model!.createSession(
         temperature: request.temperature,
-        // Vision modality must also be enabled at the session level.
-        enableVisionModality: isVision,
+        enableVisionModality: false,
       );
 
       try {
-        if (isVision) {
-          // flutter_gemma requires raw bytes, not a file path.
-          final bytes = await File(request.imagePath!).readAsBytes();
-          await session.addQueryChunk(
-            Message.withImage(
-              text: request.prompt,
-              imageBytes: bytes,
-              isUser: true,
-            ),
-          );
-        } else {
-          await session.addQueryChunk(
-            Message.text(text: request.prompt, isUser: true),
-          );
-        }
+        await session.addQueryChunk(
+          Message.text(text: request.prompt, isUser: true),
+        );
 
         final text = await session.getResponse();
         return InferenceResponse.success(text: text);

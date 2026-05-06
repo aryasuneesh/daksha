@@ -54,18 +54,46 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
     );
     if (photo == null) return; // user cancelled
 
-    // Step 2 — crop to the question area
+    // Step 2 — crop to the question area.
+    //
+    // Key uCrop settings for textbook use:
+    //   - maxResultWidth/Height: preserve full resolution so ML Kit gets sharp
+    //     text even after a tight crop of a small region.
+    //   - aspectRatioOptions: offer the full preset list + a free-form option
+    //     so the student can match any question shape.
+    //   - No lockAspectRatio, no initAspectRatio lock — free crop is essential
+    //     when two questions share the same photo and you need just one.
+    //   - showCropGrid: true gives a reference grid to align to text lines.
+    //   - The uCrop library supports two-finger pinch-to-zoom inside the crop
+    //     frame by default; the handles can be dragged to any size down to the
+    //     library minimum (~40 dp).  There is no separate Dart API to change
+    //     the min crop size — it is a uCrop compile-time constant.
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: photo.path,
+      // Preserve source resolution — downsizing now hurts OCR on small text.
+      maxWidth: 4096,
+      maxHeight: 4096,
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Select the question',
+          toolbarTitle: 'Select just the question',
           toolbarColor: DT.bg,
           toolbarWidgetColor: DT.text,
           activeControlsWidgetColor: DT.primary,
           backgroundColor: DT.canvasBg,
+          // Start in free-form (original aspect ratio) so handles are
+          // unconstrained — student can drag them very tightly.
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
+          // Show the full preset list (square, 3:2, 4:3, 16:9, original).
+          // This lets the student quickly switch to "original" if they
+          // accidentally tap a fixed ratio.
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9,
+          ],
           hideBottomControls: false,
           showCropGrid: true,
         ),
