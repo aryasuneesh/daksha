@@ -15,7 +15,7 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: DT.bg,
-      appBar: _HistoryTopBar(onBack: () => context.go('/')),
+      appBar: _HistoryTopBar(onBack: () => context.pop()),
       body: switch (problemsAsync) {
         AsyncLoading() => const Center(child: CircularProgressIndicator()),
         AsyncError(:final error) => Center(
@@ -39,7 +39,7 @@ class HistoryScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: DT.sm),
                 itemBuilder: (context, i) => _ProblemTile(
                   problem: value[i],
-                  onTap: () => context.go(
+                  onTap: () => context.push(
                     '/problem',
                     extra: value[i].rawText,
                   ),
@@ -75,12 +75,10 @@ class _HistoryTopBar extends StatelessWidget implements PreferredSizeWidget {
           children: [
             GestureDetector(
               onTap: onBack,
-              child: const SizedBox(
-                width: DT.minTouch,
-                height: DT.minTouch,
-                child: Center(
-                  child: Icon(Icons.arrow_back_ios_new, size: 20, color: DT.text),
-                ),
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: DT.lg, vertical: DT.md),
+                child: Icon(Icons.arrow_back_ios_new, size: 20, color: DT.text),
               ),
             ),
             const SizedBox(width: DT.sm),

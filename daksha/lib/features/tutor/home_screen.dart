@@ -64,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
         children: [
           PrimaryButton(
             label: count > 0 ? 'View history ($count)' : 'View history',
-            onPressed: () => context.go('/history'),
+            onPressed: () => context.push('/history'),
           ),
         ],
       ),
