@@ -107,11 +107,11 @@ class TutorService extends StateNotifier<TutorState> {
 
   Future<void> submitAttempt(String attempt) async {
     final current = state;
-    final (problemText, topic, problemId) = switch (current) {
-      TutorAsking(:final problemText, :final topic, :final problemId) =>
-        (problemText, topic, problemId),
-      TutorHinting(:final problemText, :final topic, :final problemId) =>
-        (problemText, topic, problemId),
+    final (problemText, topic, problemId, opener) = switch (current) {
+      TutorAsking(:final problemText, :final topic, :final problemId, :final opener) =>
+        (problemText, topic, problemId, opener),
+      TutorHinting(:final problemText, :final topic, :final problemId, :final opener) =>
+        (problemText, topic, problemId, opener),
       _ => throw StateError('Cannot submit attempt from state $current'),
     };
 
@@ -120,6 +120,7 @@ class TutorService extends StateNotifier<TutorState> {
       topic: topic,
       attempt: attempt,
       problemId: problemId,
+      opener: opener,
     );
 
     final feedback = await _socratic.checkAttempt(
@@ -194,6 +195,12 @@ class TutorService extends StateNotifier<TutorState> {
     );
     if (hint == null) return; // stay in current state on inference failure
 
+    final opener = switch (current) {
+      TutorAsking(:final opener)  => opener,
+      TutorHinting(:final opener) => opener,
+      _ => '',
+    };
+
     state = TutorState.hinting(
       problemText: problemText,
       topic: topic,
@@ -201,6 +208,7 @@ class TutorService extends StateNotifier<TutorState> {
       hint: hint,
       problemId: problemId,
       firstHintAt: newFirstHintAt,
+      opener: opener,
     );
   }
 

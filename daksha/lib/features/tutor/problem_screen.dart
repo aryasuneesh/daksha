@@ -190,6 +190,18 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
       state is TutorAsking || state is TutorHinting;
 
   Widget _buildChatArea(TutorState state) {
+    // Scroll to bottom after each build so newly added messages are visible
+    // without the student having to manually scroll down.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
     return ListView(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(
@@ -225,10 +237,11 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
           DakshaBubble(text: opener),
           const SizedBox(height: DT.sm),
         ],
-      TutorChecking(:final attempt, topic: _) => [
-          const DakshaBubble(
-            text: 'What do you think? Try working it through.',
-          ),
+      // Show full conversation: opener → student attempt → thinking spinner.
+      // opener is now threaded through from TutorAsking so the student can
+      // see the Socratic question they were responding to.
+      TutorChecking(:final attempt, :final opener) => [
+          DakshaBubble(text: opener),
           const SizedBox(height: DT.sm),
           StudentBubble(text: attempt),
           const SizedBox(height: DT.sm),
@@ -243,7 +256,10 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
             ),
           ),
         ],
-      TutorHinting(:final hint, :final level) => [
+      // Show opener + hint so the student sees the full context.
+      TutorHinting(:final hint, :final level, :final opener) => [
+          DakshaBubble(text: opener),
+          const SizedBox(height: DT.sm),
           AmberCard(label: 'Hint $level', body: hint),
           const SizedBox(height: DT.sm),
           HintLevelDots(level: level),

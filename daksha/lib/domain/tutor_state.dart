@@ -18,6 +18,9 @@ sealed class TutorState with _$TutorState {
     required Topic topic,
     required String attempt,
     required String problemId,
+    // The Socratic opener from TutorAsking — carried through so the chat
+    // can display the full conversation history (opener → attempt → spinner).
+    required String opener,
   }) = TutorChecking;
   const factory TutorState.hinting({
     required String problemText,
@@ -26,6 +29,8 @@ sealed class TutorState with _$TutorState {
     required String hint,
     required String problemId,
     required DateTime firstHintAt,
+    // Opener carried through for consistent conversation display.
+    required String opener,
   }) = TutorHinting;
   const factory TutorState.solved({
     required String problemId,

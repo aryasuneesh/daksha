@@ -131,14 +131,14 @@ return solved(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)?  hinting,TResult Function( String problemId)?  solved,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult Function( String problemId)?  solved,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
 return idle();case TutorClassifying() when classifying != null:
 return classifying(_that.problemText);case TutorAsking() when asking != null:
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting() when hinting != null:
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved() when solved != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
 return solved(_that.problemId);case _:
   return orElse();
 
@@ -157,14 +157,14 @@ return solved(_that.problemId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)  hinting,required TResult Function( String problemId)  solved,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)  hinting,required TResult Function( String problemId)  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle():
 return idle();case TutorClassifying():
 return classifying(_that.problemText);case TutorAsking():
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking():
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting():
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved():
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting():
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved():
 return solved(_that.problemId);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -179,14 +179,14 @@ return solved(_that.problemId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt)?  hinting,TResult? Function( String problemId)?  solved,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult? Function( String problemId)?  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
 return idle();case TutorClassifying() when classifying != null:
 return classifying(_that.problemText);case TutorAsking() when asking != null:
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId);case TutorHinting() when hinting != null:
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt);case TutorSolved() when solved != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
 return solved(_that.problemId);case _:
   return null;
 
@@ -369,13 +369,16 @@ as String,
 
 
 class TutorChecking implements TutorState {
-  const TutorChecking({required this.problemText, required this.topic, required this.attempt, required this.problemId});
+  const TutorChecking({required this.problemText, required this.topic, required this.attempt, required this.problemId, required this.opener});
   
 
  final  String problemText;
  final  Topic topic;
  final  String attempt;
  final  String problemId;
+// The Socratic opener from TutorAsking — carried through so the chat
+// can display the full conversation history (opener → attempt → spinner).
+ final  String opener;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
@@ -387,16 +390,16 @@ $TutorCheckingCopyWith<TutorChecking> get copyWith => _$TutorCheckingCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorChecking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.attempt, attempt) || other.attempt == attempt)&&(identical(other.problemId, problemId) || other.problemId == problemId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorChecking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.attempt, attempt) || other.attempt == attempt)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.opener, opener) || other.opener == opener));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText,topic,attempt,problemId);
+int get hashCode => Object.hash(runtimeType,problemText,topic,attempt,problemId,opener);
 
 @override
 String toString() {
-  return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId)';
+  return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId, opener: $opener)';
 }
 
 
@@ -407,7 +410,7 @@ abstract mixin class $TutorCheckingCopyWith<$Res> implements $TutorStateCopyWith
   factory $TutorCheckingCopyWith(TutorChecking value, $Res Function(TutorChecking) _then) = _$TutorCheckingCopyWithImpl;
 @useResult
 $Res call({
- String problemText, Topic topic, String attempt, String problemId
+ String problemText, Topic topic, String attempt, String problemId, String opener
 });
 
 
@@ -424,12 +427,13 @@ class _$TutorCheckingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? attempt = null,Object? problemId = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? attempt = null,Object? problemId = null,Object? opener = null,}) {
   return _then(TutorChecking(
 problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
 as Topic,attempt: null == attempt ? _self.attempt : attempt // ignore: cast_nullable_to_non_nullable
 as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -441,7 +445,7 @@ as String,
 
 
 class TutorHinting implements TutorState {
-  const TutorHinting({required this.problemText, required this.topic, required this.level, required this.hint, required this.problemId, required this.firstHintAt});
+  const TutorHinting({required this.problemText, required this.topic, required this.level, required this.hint, required this.problemId, required this.firstHintAt, required this.opener});
   
 
  final  String problemText;
@@ -450,6 +454,8 @@ class TutorHinting implements TutorState {
  final  String hint;
  final  String problemId;
  final  DateTime firstHintAt;
+// Opener carried through for consistent conversation display.
+ final  String opener;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
@@ -461,16 +467,16 @@ $TutorHintingCopyWith<TutorHinting> get copyWith => _$TutorHintingCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorHinting&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.level, level) || other.level == level)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.firstHintAt, firstHintAt) || other.firstHintAt == firstHintAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorHinting&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.level, level) || other.level == level)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.firstHintAt, firstHintAt) || other.firstHintAt == firstHintAt)&&(identical(other.opener, opener) || other.opener == opener));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText,topic,level,hint,problemId,firstHintAt);
+int get hashCode => Object.hash(runtimeType,problemText,topic,level,hint,problemId,firstHintAt,opener);
 
 @override
 String toString() {
-  return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt)';
+  return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt, opener: $opener)';
 }
 
 
@@ -481,7 +487,7 @@ abstract mixin class $TutorHintingCopyWith<$Res> implements $TutorStateCopyWith<
   factory $TutorHintingCopyWith(TutorHinting value, $Res Function(TutorHinting) _then) = _$TutorHintingCopyWithImpl;
 @useResult
 $Res call({
- String problemText, Topic topic, int level, String hint, String problemId, DateTime firstHintAt
+ String problemText, Topic topic, int level, String hint, String problemId, DateTime firstHintAt, String opener
 });
 
 
@@ -498,7 +504,7 @@ class _$TutorHintingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? level = null,Object? hint = null,Object? problemId = null,Object? firstHintAt = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? level = null,Object? hint = null,Object? problemId = null,Object? firstHintAt = null,Object? opener = null,}) {
   return _then(TutorHinting(
 problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
@@ -506,7 +512,8 @@ as Topic,level: null == level ? _self.level : level // ignore: cast_nullable_to_
 as int,hint: null == hint ? _self.hint : hint // ignore: cast_nullable_to_non_nullable
 as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
 as String,firstHintAt: null == firstHintAt ? _self.firstHintAt : firstHintAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
