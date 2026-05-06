@@ -117,17 +117,18 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
     };
 
     final topicSubject = switch (tutorState) {
-      TutorAsking(:final topic) => topic.subject,
+      TutorAsking(:final topic)   => topic.subject,
       TutorChecking(:final topic) => topic.subject,
-      TutorHinting(:final topic) => topic.subject,
-      _ => 'general',
+      TutorHinting(:final topic)  => topic.subject,
+      TutorClassifying()          => 'Identifying…',
+      _                           => '',
     };
 
     final topicName = switch (tutorState) {
-      TutorAsking(:final topic) => topic.displayName,
+      TutorAsking(:final topic)   => topic.displayName,
       TutorChecking(:final topic) => topic.displayName,
-      TutorHinting(:final topic) => topic.displayName,
-      _ => '',
+      TutorHinting(:final topic)  => topic.displayName,
+      _                           => '',
     };
 
     return Scaffold(

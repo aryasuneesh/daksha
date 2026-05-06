@@ -19,7 +19,7 @@ class SubjectTag extends StatelessWidget {
         border: Border.all(color: DT.outline, width: DT.bwCard),
       ),
       child: Text(
-        '$subject · $topic',
+        topic.isNotEmpty ? '$subject · $topic' : subject,
         style: DakshaTypography.caption.copyWith(color: DT.muted),
       ),
     );

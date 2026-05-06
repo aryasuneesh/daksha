@@ -33,10 +33,21 @@ class SubjectCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            MasteryRing(
-              diameter: 44,
-              progress: progress,
-              color: DT.primary,
+            // Ring shows mastery progress; icon identifies the subject.
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                MasteryRing(
+                  diameter: 44,
+                  progress: progress,
+                  color: DT.primary,
+                ),
+                Icon(
+                  _iconForSubject(subject),
+                  size: 20,
+                  color: DT.primary,
+                ),
+              ],
             ),
             const SizedBox(height: DT.sm),
             Text(
@@ -62,6 +73,21 @@ class SubjectCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Maps a subject name to a representative Material icon.
+IconData _iconForSubject(String subject) {
+  return switch (subject.toLowerCase()) {
+    'math' || 'mathematics' || 'maths' => Icons.calculate_outlined,
+    'physics'                           => Icons.bolt_outlined,
+    'chemistry'                         => Icons.science_outlined,
+    'biology'                           => Icons.eco_outlined,
+    'history' || 'social studies'       => Icons.history_edu_outlined,
+    'geography'                         => Icons.public_outlined,
+    'english' || 'language' || 'hindi'  => Icons.menu_book_outlined,
+    'computer' || 'cs' || 'computers'   => Icons.computer_outlined,
+    _                                   => Icons.auto_awesome_outlined,
+  };
 }
 
 class _DueBadge extends StatelessWidget {

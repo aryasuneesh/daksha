@@ -206,17 +206,11 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
+      child: const SizedBox(
         width: DT.minTouch,
         height: DT.minTouch,
         child: Center(
-          child: Text(
-            '◀',
-            style: DakshaTypography.body.copyWith(
-              fontSize: 18,
-              color: DT.text,
-            ),
-          ),
+          child: Icon(Icons.arrow_back_ios_new, size: 20, color: DT.text),
         ),
       ),
     );
@@ -231,17 +225,11 @@ class _CloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
+      child: const SizedBox(
         width: DT.minTouch,
         height: DT.minTouch,
         child: Center(
-          child: Text(
-            '✕',
-            style: DakshaTypography.body.copyWith(
-              fontSize: 16,
-              color: DT.muted,
-            ),
-          ),
+          child: Icon(Icons.close, size: 20, color: DT.muted),
         ),
       ),
     );
