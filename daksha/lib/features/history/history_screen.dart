@@ -39,9 +39,12 @@ class HistoryScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: DT.sm),
                 itemBuilder: (context, i) => _ProblemTile(
                   problem: value[i],
+                  // Pass the full Problem so /problem can resume the
+                  // existing conversation instead of inserting a new row
+                  // and re-running the classifier on its rawText.
                   onTap: () => context.push(
                     '/problem',
-                    extra: value[i].rawText,
+                    extra: value[i],
                   ),
                 ),
               ),

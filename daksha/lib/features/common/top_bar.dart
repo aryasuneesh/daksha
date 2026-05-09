@@ -66,6 +66,9 @@ class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// Problem screen variant: back left, subject tag centre, close right.
+/// Shows a "Solved ✓" pill instead of the close icon when [solved] is true,
+/// so the student can keep asking follow-up doubts after a correct answer
+/// without losing track that the original problem is done.
 class ProblemTopBar extends StatelessWidget implements PreferredSizeWidget {
   const ProblemTopBar({
     super.key,
@@ -73,10 +76,12 @@ class ProblemTopBar extends StatelessWidget implements PreferredSizeWidget {
     required this.topic,
     required this.onBack,
     required this.onClose,
+    this.solved = false,
   });
 
   final String subject;
   final String topic;
+  final bool solved;
   final VoidCallback onBack;
   final VoidCallback onClose;
 
@@ -88,7 +93,30 @@ class ProblemTopBar extends StatelessWidget implements PreferredSizeWidget {
     return _TopBarShell(
       left: _BackButton(onTap: onBack),
       center: SubjectTag(subject: subject, topic: topic),
-      right: _CloseButton(onTap: onClose),
+      right: solved
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: DT.success.withAlpha(40),
+                    borderRadius: BorderRadius.circular(DT.radiusBtn),
+                  ),
+                  child: Text(
+                    'Solved ✓',
+                    style: DakshaTypography.caption.copyWith(
+                      color: DT.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: DT.sm),
+                _CloseButton(onTap: onClose),
+              ],
+            )
+          : _CloseButton(onTap: onClose),
     );
   }
 }

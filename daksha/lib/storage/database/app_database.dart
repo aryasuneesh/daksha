@@ -84,6 +84,21 @@ class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore, Pare
     );
   }
 
+  @override
+  Future<List<StoredTurn>> readTurns(String problemId) async {
+    final rows = await (select(conversationTurns)
+          ..where((t) => t.problemId.equals(problemId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+    return rows
+        .map((r) => StoredTurn(
+              role: r.role,
+              content: r.content,
+              createdAt: r.createdAt,
+            ))
+        .toList(growable: false);
+  }
+
   // ---------------------------------------------------------------------------
   // History queries
   // ---------------------------------------------------------------------------

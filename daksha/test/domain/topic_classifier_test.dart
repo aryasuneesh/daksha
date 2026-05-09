@@ -52,7 +52,6 @@ void main() {
       expect(result, isNotNull);
       expect(result!.topic.slug, equals('linear-equations'));
       expect(result.topic.subject, equals('math'));
-      expect(result.confidence, equals(0.9));
     });
 
     test('returns null on engine failure', () async {
@@ -127,8 +126,13 @@ void main() {
       expect(capturedRequest.maxTokens, equals(64));
       expect(capturedRequest.grammarBnf, isNotNull);
       expect(capturedRequest.prompt, contains('test problem text'));
-      expect(capturedRequest.prompt, contains('math/linear-equations'));
-      expect(capturedRequest.prompt, contains('physics/motion'));
+      // The classifier now lays out subjects + display names so the model
+      // sees human labels, not just dash-separated slugs. Check for the
+      // grouped form rather than the old `subject/slug` pairs.
+      expect(capturedRequest.prompt, contains('math:'));
+      expect(capturedRequest.prompt, contains('linear-equations'));
+      expect(capturedRequest.prompt, contains('Linear Equations'));
+      expect(capturedRequest.prompt, contains('motion'));
     });
   });
 }

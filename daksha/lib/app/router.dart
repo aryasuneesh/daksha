@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:daksha/core/security/secure_screen_mixin.dart';
 import 'package:daksha/features/capture/capture_screen.dart';
 import 'package:daksha/features/parent/gate_screen.dart';
 import 'package:daksha/features/parent/setup_screen.dart';
@@ -12,6 +10,7 @@ import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
 import 'package:daksha/features/tutor/solved_screen.dart';
+import 'package:daksha/storage/database/app_database.dart';
 
 /// Creates the app router.
 ///
@@ -32,9 +31,24 @@ GoRouter createRouter({bool needsSetup = false}) {
       ),
       GoRoute(
         path: '/problem',
-        builder: (context, state) => ProblemScreen(
-          problemText: state.extra as String? ?? '',
-        ),
+        builder: (context, state) {
+          // /problem is reached two ways:
+          //   - capture / type flow → extra is the raw String problem text
+          //   - history tile         → extra is the full [Problem] row,
+          //                             which lets us resume the saved
+          //                             conversation instead of re-running
+          //                             classifier + opener on the text.
+          final extra = state.extra;
+          if (extra is Problem) {
+            return ProblemScreen(
+              problemText: extra.rawText,
+              resumed: extra,
+            );
+          }
+          return ProblemScreen(
+            problemText: extra is String ? extra : '',
+          );
+        },
       ),
       GoRoute(
         path: '/solved',
@@ -70,23 +84,4 @@ GoRouter createRouter({bool needsSetup = false}) {
       ),
     ],
   );
-}
-
-class _SecurePlaceholderScreen extends StatefulWidget {
-  const _SecurePlaceholderScreen({required this.title});
-  final String title;
-  @override
-  State<_SecurePlaceholderScreen> createState() =>
-      _SecurePlaceholderScreenState();
-}
-
-class _SecurePlaceholderScreenState extends State<_SecurePlaceholderScreen>
-    with SecureScreenMixin {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Center(child: Text(widget.title)),
-    );
-  }
 }

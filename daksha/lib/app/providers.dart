@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:daksha/core/constants/model.dart';
 import 'package:daksha/storage/secure_key_provider.dart';
 import 'package:daksha/storage/database/app_database.dart';
 import 'package:daksha/inference/engine_factory.dart';
@@ -22,7 +23,14 @@ final secureKeyProvider = FutureProvider<String>((ref) async {
 
 final dbProvider = FutureProvider<AppDatabase>((ref) async {
   final key = await ref.watch(secureKeyProvider.future);
-  return openAppDatabase(key);
+  final db = await openAppDatabase(key);
+  // Close the underlying SQLite connection if the provider is ever disposed
+  // (e.g. on test teardown or a future hot-restart hook). Without this the
+  // file handle leaks until process exit.
+  ref.onDispose(() async {
+    await db.close();
+  });
+  return db;
 });
 
 final engineProvider = FutureProvider<InferenceEngine>((ref) async {
@@ -33,7 +41,7 @@ final engineProvider = FutureProvider<InferenceEngine>((ref) async {
   // because MediaPipeEngine.load() calls FlutterGemma.hasActiveModel() and
   // uses the registered model path, not the path passed here.  The path here
   // is only the fallback for a manual adb-push workflow without setup screen.
-  final mediaPipePath = p.join(dir.path, 'models', 'gemma-4-E4B-it.litertlm');
+  final mediaPipePath = p.join(dir.path, 'models', kModelFilename);
   final llamaCppPath = p.join(dir.path, 'models', 'gemma3n-e2b-q4.gguf');
   final engine = EngineFactory.create(
     mediaPipeModelPath: mediaPipePath,
@@ -42,6 +50,11 @@ final engineProvider = FutureProvider<InferenceEngine>((ref) async {
     // MediaPipeEngine. Its load() checks hasActiveModel() internally.
     preference: EnginePreference.mediaPipe,
   );
+  // Release GPU/OpenCL memory if the provider is ever disposed. Without this
+  // a future invalidate() would leave ~2.26 GB of weights pinned forever.
+  ref.onDispose(() async {
+    await engine.dispose();
+  });
   // load() initialises the flutter_gemma InferenceModel — this is where the
   // model is loaded into GPU/NPU memory. It must complete before any generate()
   // call can be made.
@@ -52,6 +65,16 @@ final engineProvider = FutureProvider<InferenceEngine>((ref) async {
 final taxonomyProvider = FutureProvider<List<Topic>>((ref) async {
   return TaxonomyLoader.load();
 });
+
+/// Fire-once verdict events from the tutor service.
+///
+/// Held in a separate provider (rather than baked into [TutorState]) because
+/// pop-ups must fire on transition only. If we put the verdict in the state,
+/// every rebuild after a "wrong" attempt would re-show the dialog.
+///
+/// The [ProblemScreen] consumer calls `state = null` after showing the
+/// dialog so the value is consumed exactly once per emission.
+final tutorVerdictEventProvider = StateProvider<TutorVerdictEvent?>((_) => null);
 
 /// Tutor service — wired to real engine + db + taxonomy.
 ///
@@ -72,6 +95,9 @@ final tutorServiceProvider =
     classifier: TopicClassifier(engine: engine, topics: topics),
     socratic: SocraticService(engine),
     store: db,
+    onVerdict: (event) {
+      ref.read(tutorVerdictEventProvider.notifier).state = event;
+    },
   );
 });
 
@@ -82,6 +108,17 @@ final tutorServiceProvider =
 final problemsProvider = StreamProvider<List<Problem>>((ref) async* {
   final db = await ref.watch(dbProvider.future);
   yield* db.watchAllProblems();
+});
+
+/// Stream of conversation turns for a given problem, oldest first.
+///
+/// Used by [ProblemScreen] to render the chat from the DB rather than from
+/// in-memory tutor state — that's what allows a history → resume flow to
+/// replay prior turns instead of starting from scratch.
+final turnsProvider = StreamProvider.family<
+    List<ConversationTurn>,
+    ({AppDatabase db, String problemId})>((ref, key) {
+  return key.db.watchTurns(key.problemId);
 });
 
 /// Count of all problems stored so far (for the home screen badge).

@@ -4,19 +4,31 @@ import 'package:go_router/go_router.dart';
 import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
+import 'package:daksha/domain/socratic_tools.dart';
+import 'package:daksha/domain/taxonomy.dart';
 import 'package:daksha/domain/tutor_state.dart';
 import 'package:daksha/features/common/top_bar.dart';
 import 'package:daksha/features/common/buttons.dart';
-import 'package:daksha/features/common/cards.dart';
 import 'package:daksha/features/tutor/widgets/daksha_bubble.dart';
 import 'package:daksha/features/tutor/widgets/student_bubble.dart';
 import 'package:daksha/features/tutor/widgets/problem_header.dart';
 import 'package:daksha/features/tutor/widgets/hint_level_dots.dart';
+import 'package:daksha/storage/database/app_database.dart';
 
 class ProblemScreen extends ConsumerStatefulWidget {
-  const ProblemScreen({super.key, this.problemText = ''});
+  const ProblemScreen({
+    super.key,
+    this.problemText = '',
+    this.resumed,
+  });
 
+  /// Raw text shown in the header. For a new problem this is the only
+  /// thing we have; for a resumed one it's [resumed?.rawText].
   final String problemText;
+
+  /// When non-null we re-enter an existing problem. The classifier and
+  /// opener generation are skipped — the chat hydrates from the DB.
+  final Problem? resumed;
 
   @override
   ConsumerState<ProblemScreen> createState() => _ProblemScreenState();
@@ -26,11 +38,22 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
-  // Guard so startProblem is only called once, after all async deps are ready.
-  // Triggered from build() — which only runs past the allReady guard — rather
-  // than from initState(), where engineProvider may still be loading or in an
-  // error state (causing requireValue to throw unguarded).
-  bool _problemStarted = false;
+  bool _started = false;
+  int _lastChatItemCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Reset any stale tutor state from a previous problem before this
+    // screen starts its own. Without this, opening problem B from history
+    // while problem A's state is still in memory would briefly route the
+    // first sent message at A's problemId.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(tutorServiceProvider.notifier).reset();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -50,11 +73,16 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
     ref.read(tutorServiceProvider.notifier).requestHint();
   }
 
+  void _safeBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Guard: all three async deps must be ready before tutorServiceProvider
-    // can build. Show a loading indicator until they are; show an error card
-    // if any of them fail (e.g. model file missing after a wipe).
     final engineAsync = ref.watch(engineProvider);
     final dbAsync = ref.watch(dbProvider);
     final taxonomyAsync = ref.watch(taxonomyProvider);
@@ -63,10 +91,16 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
         engineAsync.hasValue && dbAsync.hasValue && taxonomyAsync.hasValue;
 
     if (!allReady) {
-      // Show errors prominently; otherwise a neutral spinner.
-      final firstError = engineAsync.error ?? dbAsync.error ?? taxonomyAsync.error;
+      final firstError =
+          engineAsync.error ?? dbAsync.error ?? taxonomyAsync.error;
       return Scaffold(
         backgroundColor: DT.bg,
+        appBar: ProblemTopBar(
+          subject: '',
+          topic: '',
+          onBack: _safeBack,
+          onClose: _safeBack,
+        ),
         body: SafeArea(
           child: Center(
             child: firstError != null
@@ -78,7 +112,15 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
                       textAlign: TextAlign.center,
                     ),
                   )
-                : const CircularProgressIndicator(),
+                : const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: DT.lg),
+                      Text('Warming up Daksha…',
+                          style: DakshaTypography.sm),
+                    ],
+                  ),
           ),
         ),
       );
@@ -86,26 +128,48 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
 
     final tutorState = ref.watch(tutorServiceProvider);
 
-    // All deps are ready — trigger startProblem exactly once.
-    // Using addPostFrameCallback so the first build completes before the
-    // state transition begins (avoids setState-during-build warnings).
-    if (!_problemStarted && widget.problemText.isNotEmpty) {
-      _problemStarted = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref
-              .read(tutorServiceProvider.notifier)
-              .startProblem(widget.problemText);
+    // Show a verdict dialog when the service emits a fire-once event. Done
+    // via ref.listen (not ref.watch) so we react to *transitions*, not every
+    // rebuild — otherwise a rebuild while the dialog is open would re-show
+    // it. We clear the provider after consuming so the dialog doesn't
+    // re-fire on the next listener registration.
+    ref.listen<TutorVerdictEvent?>(tutorVerdictEventProvider, (prev, next) {
+      if (next == null || !mounted) return;
+      _showVerdictDialog(next);
+      ref.read(tutorVerdictEventProvider.notifier).state = null;
+    });
+
+    // Trigger startProblem or resumeProblem exactly once per screen instance.
+    if (!_started) {
+      _started = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final notifier = ref.read(tutorServiceProvider.notifier);
+        final resumed = widget.resumed;
+        if (resumed != null) {
+          // Reconstruct the topic from the stored slug. If the slug isn't
+          // in the current taxonomy (e.g. taxonomy.json updated since the
+          // problem was captured), fall back to a best-effort Topic so the
+          // header still renders something readable.
+          final topics = taxonomyAsync.requireValue;
+          final topic = topics.firstWhere(
+            (t) => t.subject == resumed.subject && t.slug == resumed.topic,
+            orElse: () => Topic(
+              subject: resumed.subject,
+              slug: resumed.topic,
+              displayName: resumed.topic.replaceAll('-', ' '),
+            ),
+          );
+          await notifier.resumeProblem(
+            problemId: resumed.id,
+            problemText: resumed.rawText,
+            topic: topic,
+          );
+        } else if (widget.problemText.isNotEmpty) {
+          await notifier.startProblem(widget.problemText);
         }
       });
     }
-
-    // Navigate to solved screen when solved
-    ref.listen<TutorState>(tutorServiceProvider, (_, next) {
-      if (next is TutorSolved && mounted) {
-        context.go('/solved');
-      }
-    });
 
     final displayProblem = switch (tutorState) {
       TutorIdle() => widget.problemText,
@@ -113,42 +177,62 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
       TutorAsking(:final problemText) => problemText,
       TutorChecking(:final problemText) => problemText,
       TutorHinting(:final problemText) => problemText,
-      TutorSolved() => widget.problemText,
+      TutorSolved(:final problemText) => problemText,
     };
 
     final topicSubject = switch (tutorState) {
       TutorAsking(:final topic)   => topic.subject,
       TutorChecking(:final topic) => topic.subject,
       TutorHinting(:final topic)  => topic.subject,
+      TutorSolved(:final topic)   => topic.subject,
       TutorClassifying()          => 'Identifying…',
-      _                           => '',
+      _                           => widget.resumed?.subject ?? '',
     };
 
     final topicName = switch (tutorState) {
       TutorAsking(:final topic)   => topic.displayName,
       TutorChecking(:final topic) => topic.displayName,
       TutorHinting(:final topic)  => topic.displayName,
-      _                           => '',
+      TutorSolved(:final topic)   => topic.displayName,
+      _                           => widget.resumed?.topic.replaceAll('-', ' ') ?? '',
     };
+
+    // Resolve the active problemId from either the resumed problem (most
+    // reliable, available before any inference completes) or the current
+    // tutor state.
+    final problemId = widget.resumed?.id ??
+        switch (tutorState) {
+          TutorAsking(:final problemId) => problemId,
+          TutorChecking(:final problemId) => problemId,
+          TutorHinting(:final problemId) => problemId,
+          TutorSolved(:final problemId) => problemId,
+          _ => null,
+        };
+
+    final isSolved =
+        (widget.resumed?.solved ?? false) || tutorState is TutorSolved;
+    final isThinking =
+        tutorState is TutorChecking || tutorState is TutorClassifying;
+    // Disable input while inference is in flight — but never disable just
+    // because the problem is "solved". The student may have a follow-up
+    // doubt, and locking them out of the textbox is part of the bug we're
+    // fixing.
+    final canInput = !isThinking && problemId != null;
 
     return Scaffold(
       backgroundColor: DT.bg,
       appBar: ProblemTopBar(
         subject: topicSubject,
         topic: topicName,
-        onBack: () => context.go('/'),
+        solved: isSolved,
+        onBack: _safeBack,
         onClose: () {
           ref.read(tutorServiceProvider.notifier).reset();
-          context.go('/');
+          _safeBack();
         },
       ),
       body: Column(
         children: [
-          // Pinned problem header — capped at 30% of visible body height so
-          // it never crowds out the conversation area, even for long multi-part
-          // textbook questions.  Scrolls internally if the text is taller than
-          // the cap.  The cap also prevents keyboard-open overflow because the
-          // header cannot expand beyond its allotted fraction.
           ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(context).height * 0.30,
@@ -164,120 +248,88 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
               ),
             ),
           ),
-          // Chat area — takes all remaining space above the input row.
           Expanded(
-            child: _buildChatArea(tutorState),
+            child: problemId == null
+                ? const _StartingPlaceholder()
+                : _ChatArea(
+                    problemId: problemId,
+                    isThinking: isThinking,
+                    scrollController: _scrollController,
+                    onItemCountChange: _maybeAutoScroll,
+                  ),
           ),
-          // Hint button
+          if (tutorState is TutorHinting)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: DT.xs),
+              child: HintLevelDots(level: tutorState.level),
+            ),
           Center(
             child: DakshaTextButton(
               label: '💡 Need a hint',
               onPressed: _canRequestHint(tutorState) ? _onHint : null,
             ),
           ),
-          // Input row
-          _buildInputRow(tutorState),
+          _buildInputRow(canInput),
         ],
       ),
     );
+  }
+
+  void _maybeAutoScroll(int n) {
+    if (n != _lastChatItemCount) {
+      _lastChatItemCount = n;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 
   bool _canRequestHint(TutorState state) {
     return state is TutorAsking || state is TutorHinting;
   }
 
-  bool _canSubmitAttempt(TutorState state) =>
-      state is TutorAsking || state is TutorHinting;
+  /// Shows a modal dialog acknowledging a graded attempt. Fired once per
+  /// verdict event from the service (see the [ref.listen] in [build]).
+  ///
+  /// The "close" verdict deliberately never reaches here — see TutorService
+  /// for the rationale (close = "almost there, keep guiding", not a final
+  /// judgement worth interrupting the chat for).
+  void _showVerdictDialog(TutorVerdictEvent event) {
+    final isCorrect = event.verdict == AttemptVerdict.correct;
+    final title = isCorrect ? 'Solved!' : 'Not quite yet';
+    final emoji = isCorrect ? '🎉' : '💭';
+    final message = isCorrect
+        ? 'Great job! You can ask follow-up questions or start a new problem.'
+        : 'Your answer wasn\'t right, but keep going — try again, ask a question, or use a hint.';
 
-  Widget _buildChatArea(TutorState state) {
-    // Scroll to bottom after each build so newly added messages are visible
-    // without the student having to manually scroll down.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
-    return ListView(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(
-        horizontal: DT.contentPad,
-        vertical: DT.sm,
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: DT.sm),
+            Text(title),
+          ],
+        ),
+        content: Text(message, style: DakshaTypography.body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
-      children: _buildChatItems(state),
     );
   }
 
-  List<Widget> _buildChatItems(TutorState state) {
-    return switch (state) {
-      TutorIdle() => [
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(DT.lg),
-              child: Text(
-                'Enter a problem to get started.',
-                style: DakshaTypography.sm,
-              ),
-            ),
-          ),
-        ],
-      TutorClassifying() => [
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(DT.lg),
-              child: CircularProgressIndicator(color: DT.primary),
-            ),
-          ),
-        ],
-      TutorAsking(:final opener) => [
-          DakshaBubble(text: opener),
-          const SizedBox(height: DT.sm),
-        ],
-      // Show full conversation: opener → student attempt → thinking spinner.
-      // opener is now threaded through from TutorAsking so the student can
-      // see the Socratic question they were responding to.
-      TutorChecking(:final attempt, :final opener) => [
-          DakshaBubble(text: opener),
-          const SizedBox(height: DT.sm),
-          StudentBubble(text: attempt),
-          const SizedBox(height: DT.sm),
-          const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: DT.primary,
-                strokeWidth: 2,
-              ),
-            ),
-          ),
-        ],
-      // Show opener + hint so the student sees the full context.
-      TutorHinting(:final hint, :final level, :final opener) => [
-          DakshaBubble(text: opener),
-          const SizedBox(height: DT.sm),
-          AmberCard(label: 'Hint $level', body: hint),
-          const SizedBox(height: DT.sm),
-          HintLevelDots(level: level),
-          const SizedBox(height: DT.sm),
-        ],
-      TutorSolved() => [
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(DT.lg),
-              child: Text('Solved!', style: DakshaTypography.headingMd),
-            ),
-          ),
-        ],
-    };
-  }
-
-  Widget _buildInputRow(TutorState state) {
-    final canSubmit = _canSubmitAttempt(state);
+  Widget _buildInputRow(bool canInput) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: DT.lg,
@@ -288,25 +340,136 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
-              enabled: canSubmit,
-              decoration: const InputDecoration(hintText: 'Your answer...'),
-              onSubmitted: canSubmit ? (_) => _onSend() : null,
+              enabled: canInput,
+              decoration: const InputDecoration(
+                hintText: 'Type your answer or ask a question…',
+              ),
+              onSubmitted: canInput ? (_) => _onSend() : null,
             ),
           ),
           const SizedBox(width: DT.sm),
           GestureDetector(
-            onTap: canSubmit ? _onSend : null,
+            onTap: canInput ? _onSend : null,
             child: Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: canSubmit ? DT.primary : DT.muted,
+                color: canInput ? DT.primary : DT.muted,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.send, color: DT.primaryFg, size: 20),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Streams the conversation log from the DB and renders it as bubbles.
+/// Switching the chat to a DB-backed source is what makes resume work — the
+/// previous design rebuilt the bubble list from in-memory [TutorState] alone,
+/// so reopening a problem started from scratch.
+class _ChatArea extends ConsumerWidget {
+  const _ChatArea({
+    required this.problemId,
+    required this.isThinking,
+    required this.scrollController,
+    required this.onItemCountChange,
+  });
+
+  final String problemId;
+  final bool isThinking;
+  final ScrollController scrollController;
+  final void Function(int) onItemCountChange;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final db = ref.watch(dbProvider).valueOrNull;
+    if (db == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final turnsAsync =
+        ref.watch(turnsProvider((db: db, problemId: problemId)));
+
+    return turnsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(DT.contentPad),
+          child: Text(
+            'Could not load conversation: $e',
+            style: DakshaTypography.body.copyWith(color: DT.error),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+      data: (turns) {
+        // Append a thinking spinner while inference is in flight so the
+        // student sees that something is happening after they hit send.
+        final tail = isThinking ? 1 : 0;
+        final itemCount = turns.length + tail;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onItemCountChange(itemCount);
+        });
+
+        if (itemCount == 0) {
+          return const _StartingPlaceholder();
+        }
+
+        return ListView.separated(
+          controller: scrollController,
+          padding: const EdgeInsets.symmetric(
+            horizontal: DT.contentPad,
+            vertical: DT.sm,
+          ),
+          itemCount: itemCount,
+          separatorBuilder: (_, __) => const SizedBox(height: DT.sm),
+          itemBuilder: (context, i) {
+            if (i >= turns.length) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(DT.sm),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: DT.primary,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              );
+            }
+            final t = turns[i];
+            if (t.role == 'student') {
+              return StudentBubble(text: t.content);
+            }
+            return DakshaBubble(text: t.content);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _StartingPlaceholder extends StatelessWidget {
+  const _StartingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(DT.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: DT.primary),
+            SizedBox(height: DT.md),
+            Text('Reading your problem…', style: DakshaTypography.sm),
+          ],
+        ),
       ),
     );
   }

@@ -131,7 +131,7 @@ return solved(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult Function( String problemId)?  solved,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult Function( String problemId,  String problemText,  Topic topic,  String opener)?  solved,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
 return idle();case TutorClassifying() when classifying != null:
@@ -139,7 +139,7 @@ return classifying(_that.problemText);case TutorAsking() when asking != null:
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
 return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
 return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
-return solved(_that.problemId);case _:
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _:
   return orElse();
 
 }
@@ -157,7 +157,7 @@ return solved(_that.problemId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)  hinting,required TResult Function( String problemId)  solved,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)  hinting,required TResult Function( String problemId,  String problemText,  Topic topic,  String opener)  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle():
 return idle();case TutorClassifying():
@@ -165,7 +165,7 @@ return classifying(_that.problemText);case TutorAsking():
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking():
 return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting():
 return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved():
-return solved(_that.problemId);}
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -179,7 +179,7 @@ return solved(_that.problemId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult? Function( String problemId)?  solved,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult? Function( String problemId,  String problemText,  Topic topic,  String opener)?  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
 return idle();case TutorClassifying() when classifying != null:
@@ -187,7 +187,7 @@ return classifying(_that.problemText);case TutorAsking() when asking != null:
 return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
 return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
 return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
-return solved(_that.problemId);case _:
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _:
   return null;
 
 }
@@ -524,10 +524,17 @@ as String,
 
 
 class TutorSolved implements TutorState {
-  const TutorSolved({required this.problemId});
+  const TutorSolved({required this.problemId, required this.problemText, required this.topic, required this.opener});
   
 
  final  String problemId;
+// Conversation context retained so the student can keep chatting after
+// the problem is marked solved (asking follow-ups, clarifications, etc.).
+// Without these the service would have no problemText/topic to feed
+// [SocraticService.judgeOrReply] from a post-solve message.
+ final  String problemText;
+ final  Topic topic;
+ final  String opener;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
@@ -539,16 +546,16 @@ $TutorSolvedCopyWith<TutorSolved> get copyWith => _$TutorSolvedCopyWithImpl<Tuto
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorSolved&&(identical(other.problemId, problemId) || other.problemId == problemId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorSolved&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemId);
+int get hashCode => Object.hash(runtimeType,problemId,problemText,topic,opener);
 
 @override
 String toString() {
-  return 'TutorState.solved(problemId: $problemId)';
+  return 'TutorState.solved(problemId: $problemId, problemText: $problemText, topic: $topic, opener: $opener)';
 }
 
 
@@ -559,7 +566,7 @@ abstract mixin class $TutorSolvedCopyWith<$Res> implements $TutorStateCopyWith<$
   factory $TutorSolvedCopyWith(TutorSolved value, $Res Function(TutorSolved) _then) = _$TutorSolvedCopyWithImpl;
 @useResult
 $Res call({
- String problemId
+ String problemId, String problemText, Topic topic, String opener
 });
 
 
@@ -576,9 +583,12 @@ class _$TutorSolvedCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemId = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? problemId = null,Object? problemText = null,Object? topic = null,Object? opener = null,}) {
   return _then(TutorSolved(
 problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
+as String,problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
+as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
+as Topic,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

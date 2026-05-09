@@ -47,15 +47,21 @@ class FakeClassifier extends TopicClassifier {
 }
 
 /// Fake [SocraticService] with controllable responses.
+///
+/// `setFeedback` controls the attempt-grading branch of [judgeOrReply].
+/// `setDoubtReply` lets tests exercise the question / doubt branch — set
+/// non-null to force the next `judgeOrReply` call to take the doubt path.
 class FakeSocratic extends SocraticService {
   SocraticOpener? _opener;
   AttemptFeedback? _feedback;
+  String? _doubtReply;
   String? _hint;
 
   FakeSocratic() : super(_FakeEngine());
 
   void setOpener(SocraticOpener? o) => _opener = o;
   void setFeedback(AttemptFeedback? f) => _feedback = f;
+  void setDoubtReply(String? r) => _doubtReply = r;
   void setHint(String? h) => _hint = h;
 
   @override
@@ -66,12 +72,16 @@ class FakeSocratic extends SocraticService {
       _opener;
 
   @override
-  Future<AttemptFeedback?> checkAttempt({
+  Future<StudentResponseOutcome?> judgeOrReply({
     required String problemText,
-    required String studentAttempt,
+    required String studentInput,
     required Topic topic,
-  }) async =>
-      _feedback;
+    List<({String role, String content})> history = const [],
+  }) async {
+    if (_doubtReply != null) return StudentDoubt(_doubtReply!);
+    if (_feedback == null) return null;
+    return StudentAttempt(_feedback!);
+  }
 
   @override
   Future<String?> generateHint({
@@ -116,7 +126,20 @@ class FakeStore implements ProblemStore {
       'problemId': problemId,
       'role': role,
       'content': content,
+      'createdAt': createdAt,
     });
+  }
+
+  @override
+  Future<List<StoredTurn>> readTurns(String problemId) async {
+    return turns
+        .where((t) => t['problemId'] == problemId)
+        .map((t) => StoredTurn(
+              role: t['role'] as String,
+              content: t['content'] as String,
+              createdAt: t['createdAt'] as DateTime,
+            ))
+        .toList();
   }
 
   bool? solvedFor(String id) => _solved[id];
@@ -135,6 +158,7 @@ TutorService _makeService({
   FakeSocratic? socratic,
   FakeStore? store,
   DateTime Function()? clock,
+  void Function(TutorVerdictEvent)? onVerdict,
 }) {
   final c = classifier ?? FakeClassifier();
   final s = socratic ?? FakeSocratic();
@@ -144,6 +168,7 @@ TutorService _makeService({
     socratic: s,
     store: st,
     clock: clock ?? DateTime.now,
+    onVerdict: onVerdict,
   );
 }
 
@@ -166,7 +191,7 @@ void main() {
             question: 'What is x?', hint: 'Think about subtraction'));
       final classifier = FakeClassifier()
         ..setResult(
-            const ClassificationResult(topic: _kTopic, confidence: 0.9));
+            const ClassificationResult(topic: _kTopic));
       final svc = _makeService(classifier: classifier, socratic: socratic);
 
       // addListener fires immediately with the current state, so we skip the
@@ -188,13 +213,19 @@ void main() {
       expect(asking.opener, 'What is x?');
     });
 
-    test('stays in classifying when opener is null', () async {
+    test('falls back to a default opener when socratic returns null', () async {
+      // Production behaviour: instead of stranding the student on a
+      // classifying spinner forever, [TutorService.startProblem] inserts
+      // the problem with a hard-coded fallback opener so the conversation
+      // can begin. This regression-tests that fallback path.
       final socratic = FakeSocratic()..setOpener(null);
       final svc = _makeService(socratic: socratic);
 
       await svc.startProblem(_kProblemText);
 
-      expect(svc.state, isA<TutorClassifying>());
+      expect(svc.state, isA<TutorAsking>());
+      final asking = svc.state as TutorAsking;
+      expect(asking.opener, isNotEmpty);
     });
 
     test('uses fallback topic when classifier returns null', () async {
@@ -268,9 +299,14 @@ void main() {
 
       await svc.submitAttempt('x = 3');
 
-      expect(store.turns, hasLength(1));
-      expect(store.turns[0]['role'], 'student');
-      expect(store.turns[0]['content'], 'x = 3');
+      // The store now also holds the persisted opener and the daksha
+      // feedback turn (so resumed conversations show the full thread),
+      // so we no longer assert exact length — just that the student
+      // attempt is recorded with the right role and content.
+      final studentTurns =
+          store.turns.where((t) => t['role'] == 'student').toList();
+      expect(studentTurns, hasLength(1));
+      expect(studentTurns[0]['content'], 'x = 3');
     });
 
     test('records student turn on incorrect attempt', () async {
@@ -279,9 +315,45 @@ void main() {
 
       await svc.submitAttempt('x = 99');
 
-      expect(store.turns, hasLength(1));
-      expect(store.turns[0]['role'], 'student');
-      expect(store.turns[0]['content'], 'x = 99');
+      final studentTurns =
+          store.turns.where((t) => t['role'] == 'student').toList();
+      expect(studentTurns, hasLength(1));
+      expect(studentTurns[0]['content'], 'x = 99');
+    });
+
+    test('persists daksha opener and feedback so chat can be resumed',
+        () async {
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.incorrect, explanation: 'Wrong'));
+
+      await svc.submitAttempt('x = 99');
+
+      // The full conversation must reach the store: opener, then student
+      // attempt, then daksha feedback. Without this a history → resume
+      // round trip would render an empty chat.
+      final dakshaTurns =
+          store.turns.where((t) => t['role'] == 'daksha').toList();
+      expect(dakshaTurns.map((t) => t['content']),
+          containsAll(<String>['q', 'Wrong']));
+    });
+
+    test('routes a student doubt through StudentDoubt → reverts, not solved',
+        () async {
+      // The model decided the input was a question, not an attempt.
+      // The service must NOT mark the problem solved and must NOT exit
+      // the conversation; it should record the tutor's reply and stay.
+      socratic.setDoubtReply('Think about what addition does.');
+
+      final prev = svc.state as TutorAsking;
+      await svc.submitAttempt('I do not understand the question');
+
+      expect(svc.state, isA<TutorAsking>());
+      expect((svc.state as TutorAsking).problemId, prev.problemId);
+      expect(store.solvedFor(prev.problemId), isFalse);
+      final dakshaTurns =
+          store.turns.where((t) => t['role'] == 'daksha').toList();
+      expect(dakshaTurns.map((t) => t['content']),
+          contains('Think about what addition does.'));
     });
 
     test('throws StateError from idle', () async {
@@ -416,6 +488,136 @@ void main() {
 
       expect(levelAfterRevert, greaterThanOrEqualTo(levelBefore));
       expect(levelFinal, greaterThanOrEqualTo(levelAfterRevert));
+    });
+  });
+
+  group('verdict events', () {
+    late FakeSocratic socratic;
+    late FakeStore store;
+    late List<TutorVerdictEvent> events;
+    late TutorService svc;
+
+    setUp(() async {
+      socratic = FakeSocratic()
+        ..setOpener(const SocraticOpener(question: 'q', hint: 'h'));
+      store = FakeStore();
+      events = [];
+      svc = _makeService(
+        socratic: socratic,
+        store: store,
+        onVerdict: events.add,
+      );
+      await svc.startProblem(_kProblemText);
+    });
+
+    test('correct attempt fires a verdict event', () async {
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.correct, explanation: 'Right!'));
+
+      await svc.submitAttempt('x = 3');
+
+      expect(events, hasLength(1));
+      expect(events.single.verdict, AttemptVerdict.correct);
+      expect(events.single.explanation, 'Right!');
+    });
+
+    test('incorrect attempt fires a verdict event', () async {
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.incorrect, explanation: 'Wrong'));
+
+      await svc.submitAttempt('x = 99');
+
+      expect(events, hasLength(1));
+      expect(events.single.verdict, AttemptVerdict.incorrect);
+    });
+
+    test('"close" verdict does NOT fire a pop-up', () async {
+      // "close" means "almost there" — popping a dialog would interrupt
+      // the rhythm of guided practice. The chat reply alone is the cue.
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.close, explanation: 'Almost'));
+
+      await svc.submitAttempt('x = 2.9');
+
+      expect(events, isEmpty);
+    });
+
+    test('student doubt does NOT fire a verdict event', () async {
+      socratic.setDoubtReply('think about subtraction');
+
+      await svc.submitAttempt('I am confused');
+
+      expect(events, isEmpty);
+    });
+
+    test('post-solve follow-up does NOT fire a verdict event', () async {
+      // Bug fix: once solved, casual follow-ups the model misjudges as
+      // "incorrect attempts" should not pop up "Not quite!" dialogs.
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.correct, explanation: 'Right!'));
+      await svc.submitAttempt('x = 3');
+      expect(svc.state, isA<TutorSolved>());
+      events.clear();
+
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.incorrect, explanation: 'Hmm'));
+      await svc.submitAttempt('what about 5+3?');
+
+      expect(events, isEmpty,
+          reason: 'post-solve verdicts should be suppressed');
+    });
+  });
+
+  group('post-solve follow-ups', () {
+    late FakeSocratic socratic;
+    late FakeStore store;
+    late TutorService svc;
+
+    setUp(() async {
+      socratic = FakeSocratic()
+        ..setOpener(const SocraticOpener(question: 'q', hint: 'h'));
+      store = FakeStore();
+      svc = _makeService(socratic: socratic, store: store);
+      await svc.startProblem(_kProblemText);
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.correct, explanation: 'Right!'));
+      await svc.submitAttempt('x = 3');
+      assert(svc.state is TutorSolved);
+    });
+
+    test('submitAttempt from solved state does NOT throw', () async {
+      // Bug fix: previously threw `Cannot submit input from state
+      // TutorState.solved(...)`. The input field was left enabled by the
+      // UI ("never disable just because the problem is solved" — see
+      // problem_screen.dart) but every send crashed.
+      socratic.setDoubtReply('Great question!');
+
+      await expectLater(svc.submitAttempt('why does that work?'),
+          completes);
+      expect(svc.state, isA<TutorSolved>());
+    });
+
+    test('post-solve doubt routes the reply into the chat', () async {
+      socratic.setDoubtReply('Because 25% is 1/4.');
+
+      await svc.submitAttempt('why 4?');
+
+      final dakshaTurns =
+          store.turns.where((t) => t['role'] == 'daksha').toList();
+      expect(dakshaTurns.map((t) => t['content']),
+          contains('Because 25% is 1/4.'));
+    });
+
+    test('post-solve attempt judged "incorrect" stays in TutorSolved',
+        () async {
+      // The student already solved it. A model misjudgement on a follow-up
+      // shouldn't un-solve the problem.
+      socratic.setFeedback(const AttemptFeedback(
+          verdict: AttemptVerdict.incorrect, explanation: 'No'));
+
+      await svc.submitAttempt('something random');
+
+      expect(svc.state, isA<TutorSolved>());
     });
   });
 

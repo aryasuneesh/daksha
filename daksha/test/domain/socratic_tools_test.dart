@@ -137,8 +137,11 @@ void main() {
         displayName: 'Algebra',
       );
 
+      // Updated to the new judgeOrReply schema — checkAttempt is now a thin
+      // wrapper around it, so the engine must produce the combined
+      // {kind, verdict, reply} shape.
       const jsonResponse =
-          '{"verdict":"correct","explanation":"x = 2 is correct!"}';
+          '{"kind":"attempt","verdict":"correct","reply":"x = 2 is correct!"}';
       when(() => mockEngine.generate(any())).thenAnswer(
         (_) async => InferenceResponse.success(text: jsonResponse),
       );
@@ -163,7 +166,8 @@ void main() {
         displayName: 'Algebra',
       );
 
-      const jsonResponse = '{"verdict":"close","explanation":"Very close!"}';
+      const jsonResponse =
+          '{"kind":"attempt","verdict":"close","reply":"Very close!"}';
       when(() => mockEngine.generate(any())).thenAnswer(
         (_) async => InferenceResponse.success(text: jsonResponse),
       );
@@ -189,7 +193,7 @@ void main() {
       );
 
       const jsonResponse =
-          '{"verdict":"incorrect","explanation":"Not quite right."}';
+          '{"kind":"attempt","verdict":"incorrect","reply":"Not quite right."}';
       when(() => mockEngine.generate(any())).thenAnswer(
         (_) async => InferenceResponse.success(text: jsonResponse),
       );

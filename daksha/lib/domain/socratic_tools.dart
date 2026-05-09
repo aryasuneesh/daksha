@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:daksha/core/constants/model.dart';
 import 'package:daksha/domain/taxonomy.dart';
 import 'package:daksha/inference/gbnf_compiler.dart';
 import 'package:daksha/inference/inference_engine.dart';
@@ -59,6 +60,27 @@ class AttemptFeedback {
 
   @override
   int get hashCode => Object.hash(verdict, explanation);
+}
+
+/// Outcome of [SocraticService.judgeOrReply].
+///
+/// The student's input may be either an attempt at the answer (graded with
+/// [AttemptFeedback]) or a question / doubt about the problem ([DoubtReply]).
+/// Treating every input as an attempt was producing false-positive "correct"
+/// verdicts on inputs like "I don't get it" — this sealed type makes the
+/// branch explicit.
+sealed class StudentResponseOutcome {
+  const StudentResponseOutcome();
+}
+
+class StudentAttempt extends StudentResponseOutcome {
+  final AttemptFeedback feedback;
+  const StudentAttempt(this.feedback);
+}
+
+class StudentDoubt extends StudentResponseOutcome {
+  final String reply;
+  const StudentDoubt(this.reply);
 }
 
 /// A stateless service for Socratic tutoring tools.
@@ -122,63 +144,138 @@ Respond with JSON only: {"question": "...", "hint": "..."}''';
     }
   }
 
-  // Schema for checkAttempt: {"verdict": string, "explanation": string}
-  static const _checkSchema = {
+  // Schema for judgeOrReply: routes intent and (if applicable) verdict in
+  // one inference call. The MediaPipe LiteRT-LM backend doesn't actually
+  // enforce GBNF (see _extractJson note), so the schema is mostly hint —
+  // the prompt does the real work.
+  static const _judgeOrReplySchema = {
     'type': 'object',
     'properties': {
-      'verdict': {'type': 'string'},
-      'explanation': {'type': 'string'},
+      'kind': {'type': 'string'},      // "attempt" | "question"
+      'verdict': {'type': 'string'},   // "correct" | "close" | "incorrect" | "n/a"
+      'reply': {'type': 'string'},     // tutor-facing message
     },
   };
 
-  /// Checks a student's attempt at solving a problem.
+  /// Routes the student's input to either grading (an attempted answer) or
+  /// answering (a question / doubt about the problem).
   ///
-  /// Returns null if the inference engine fails or the response is malformed.
+  /// Replaces the older `checkAttempt`, which assumed every student message
+  /// was an attempt and routinely returned `verdict: "correct"` on inputs
+  /// like "I don't understand" — auto-completing the problem incorrectly.
+  ///
+  /// [history] is the running conversation context (oldest first), used so
+  /// that the model can interpret short attempts in context (e.g. "x = 4"
+  /// after the tutor asked "what is x?").
+  ///
+  /// Returns null on engine failure or malformed JSON.
+  Future<StudentResponseOutcome?> judgeOrReply({
+    required String problemText,
+    required String studentInput,
+    required Topic topic,
+    List<({String role, String content})> history = const [],
+  }) async {
+    final grammar = GbnfCompiler.compile(_judgeOrReplySchema);
+
+    // Slide a window over the most recent turns so the prompt stays inside
+    // [kModelMaxTokens]. Keeping the *tail* (not the head) preserves the
+    // immediate back-and-forth context the model needs to interpret short
+    // follow-ups; older turns add little signal per token.
+    final recentHistory = history.length > kJudgeReplyHistoryTurns
+        ? history.sublist(history.length - kJudgeReplyHistoryTurns)
+        : history;
+
+    final historyBlock = recentHistory.isEmpty
+        ? '(no prior turns)'
+        : recentHistory
+            .map((t) => '${t.role == 'student' ? 'Student' : 'Daksha'}: ${t.content}')
+            .join('\n');
+
+    final prompt = '''You are Daksha, a Socratic tutor for grades 5–8.
+Subject: ${topic.subject}. Topic: ${topic.displayName}.
+Problem: $problemText
+
+Conversation so far:
+$historyBlock
+
+The student just said: "$studentInput"
+
+Decide what kind of message that is.
+- If the student is trying to give the answer or a step toward it, set "kind" to "attempt".
+- If the student is asking a question, expressing confusion, or making a comment, set "kind" to "question".
+
+Then:
+- If kind is "attempt": set "verdict" to one of "correct", "close", "incorrect" based on whether their answer solves the original problem. Be strict — only mark "correct" when the answer actually solves the problem. Vague replies, restating the question, or off-topic text are NOT correct. Then write a short, friendly "reply" that points the student toward the next step without revealing the full answer (unless verdict is "correct", in which case briefly congratulate them).
+- If kind is "question": set "verdict" to "n/a". In "reply", answer the student's question or address their confusion in plain words a 10-year-old would understand. Do NOT solve the original problem for them — guide them with a question or a small clue.
+
+Respond with JSON only:
+{"kind": "...", "verdict": "...", "reply": "..."}''';
+
+    final response = await _engine.generate(InferenceRequest(
+      prompt: prompt,
+      maxTokens: 192,
+      grammarBnf: grammar,
+    ));
+
+    return response.when(
+      success: (text, _) => _parseJudgeOrReply(text),
+      failure: (_) => null,
+    );
+  }
+
+  /// Backwards-compatible wrapper that grades [studentAttempt] as if it
+  /// were definitely an answer (no question / doubt branching).
+  ///
+  /// Used by [eval_harness] and the unit tests, which feed canonical
+  /// "this is an answer" payloads. Production code should prefer
+  /// [judgeOrReply] so that questions get answered instead of graded.
   Future<AttemptFeedback?> checkAttempt({
     required String problemText,
     required String studentAttempt,
     required Topic topic,
   }) async {
-    final grammar = GbnfCompiler.compile(_checkSchema);
-    final prompt = '''You are Daksha, a Socratic tutor.
-Subject: ${topic.subject}, Topic: ${topic.displayName}
-Problem: $problemText
-Student's answer: $studentAttempt
-
-Is the student correct? Respond with JSON only: {"verdict": "correct|close|incorrect", "explanation": "..."}''';
-
-    final response = await _engine.generate(InferenceRequest(
-      prompt: prompt,
-      maxTokens: 96,
-      grammarBnf: grammar,
-    ));
-
-    return response.when(
-      success: (text, _) => _parseFeedback(text),
-      failure: (_) => null,
+    final outcome = await judgeOrReply(
+      problemText: problemText,
+      studentInput: studentAttempt,
+      topic: topic,
     );
+    return switch (outcome) {
+      StudentAttempt(:final feedback) => feedback,
+      // The model interpreted the input as a question — surface as
+      // `incorrect` so eval probes don't accidentally count those as wins.
+      StudentDoubt(:final reply) =>
+        AttemptFeedback(verdict: AttemptVerdict.incorrect, explanation: reply),
+      null => null,
+    };
   }
 
-  /// Parses a JSON response into AttemptFeedback.
-  ///
-  /// Returns null if the JSON is malformed, missing required fields,
-  /// or contains an unknown verdict string.
-  AttemptFeedback? _parseFeedback(String raw) {
+  StudentResponseOutcome? _parseJudgeOrReply(String raw) {
     try {
       final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
-      final verdictStr = json['verdict'] as String?;
-      final explanation = json['explanation'] as String?;
-      if (verdictStr == null || explanation == null) return null;
+      final kind = (json['kind'] as String?)?.trim().toLowerCase();
+      final reply = (json['reply'] as String?)?.trim();
+      if (reply == null || reply.isEmpty) return null;
 
-      final verdict = switch (verdictStr) {
-        'correct' => AttemptVerdict.correct,
-        'close' => AttemptVerdict.close,
-        'incorrect' => AttemptVerdict.incorrect,
-        _ => null,
-      };
-      if (verdict == null) return null;
-
-      return AttemptFeedback(verdict: verdict, explanation: explanation);
+      if (kind == 'question' || kind == 'doubt' || kind == 'comment') {
+        return StudentDoubt(reply);
+      }
+      if (kind == 'attempt' || kind == 'answer') {
+        final verdictStr = (json['verdict'] as String?)?.trim().toLowerCase();
+        final verdict = switch (verdictStr) {
+          'correct' => AttemptVerdict.correct,
+          'close' => AttemptVerdict.close,
+          'incorrect' => AttemptVerdict.incorrect,
+          // Defensive default — the model occasionally emits "n/a" for an
+          // attempt. Treat ambiguous self-reports as "close" rather than
+          // "correct" so the student isn't falsely solved out.
+          _ => AttemptVerdict.close,
+        };
+        return StudentAttempt(
+          AttemptFeedback(verdict: verdict, explanation: reply),
+        );
+      }
+      // Unknown kind — fall back to doubt so we don't auto-solve.
+      return StudentDoubt(reply);
     } catch (_) {
       return null;
     }

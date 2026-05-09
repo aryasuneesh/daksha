@@ -5,9 +5,8 @@ import 'package:daksha/domain/taxonomy.dart';
 
 class ClassificationResult {
   final Topic topic;
-  final double confidence; // 0.0–1.0, model-reported
 
-  const ClassificationResult({required this.topic, required this.confidence});
+  const ClassificationResult({required this.topic});
 }
 
 class TopicClassifier {
@@ -18,31 +17,66 @@ class TopicClassifier {
       : _engine = engine,
         _topics = topics;
 
-  // Schema for constrained JSON output:
-  // {"subject": "math", "slug": "linear-equations", "confidence": 0.9}
+  // The MediaPipe LiteRT-LM backend (used in production) does NOT enforce GBNF
+  // grammars — see socratic_tools.dart for the full note. The grammar is only
+  // a hint for the LlamaCpp fallback path; the prompt itself is what makes the
+  // model produce parseable JSON, so we keep the prompt simple, give labels,
+  // and show two worked examples.
   static const _schema = {
     'type': 'object',
     'properties': {
       'subject': {'type': 'string'},
       'slug': {'type': 'string'},
-      'confidence': {'type': 'number'},
     },
   };
 
   Future<ClassificationResult?> classify(String problemText) async {
     final grammar = GbnfCompiler.compile(_schema);
-    final slugList = _topics.map((t) => '${t.subject}/${t.slug}').join(', ');
 
-    final prompt = '''Classify the following problem into one of these subject/topic pairs:
-$slugList
+    // Group topics under their subject and show display names so the model
+    // sees human-readable labels, not just dash-separated slugs. Earlier
+    // versions sent only `subject/slug` pairs — small Gemma models then
+    // defaulted to the closest-looking slug, usually misclassifying.
+    final buf = StringBuffer();
+    final bySubject = <String, List<Topic>>{};
+    for (final t in _topics) {
+      bySubject.putIfAbsent(t.subject, () => []).add(t);
+    }
+    for (final entry in bySubject.entries) {
+      buf.writeln('${entry.key}:');
+      for (final t in entry.value) {
+        buf.writeln('  - ${t.slug} → ${t.displayName}');
+      }
+    }
+
+    final prompt = '''You classify a school problem into one subject and one topic.
+
+Available subjects and topics:
+${buf.toString().trim()}
+
+Pick the single best slug from the list above. Use the exact slug as written.
+Choose the subject that the slug belongs to.
+
+Examples:
+
+Problem: Solve for x: 2x + 3 = 11
+{"subject": "math", "slug": "linear-equations"}
+
+Problem: A car travels 60 km in 2 hours. What is its average speed?
+{"subject": "physics", "slug": "motion"}
+
+Problem: What is the chemical formula for water?
+{"subject": "chemistry", "slug": "elements-compounds"}
+
+Now classify this problem.
 
 Problem: $problemText
-
-Respond with valid JSON only: {"subject": "...", "slug": "...", "confidence": 0.0}''';
+''';
 
     final request = InferenceRequest(
       prompt: prompt,
       maxTokens: 64,
+      temperature: 0.1, // low temp — this is a categorical pick, not creative
       grammarBnf: grammar,
     );
 
@@ -57,16 +91,20 @@ Respond with valid JSON only: {"subject": "...", "slug": "...", "confidence": 0.
   ClassificationResult? _parseResult(String raw) {
     try {
       final json = jsonDecode(_extractJson(raw)) as Map<String, dynamic>;
-      final subject = json['subject'] as String?;
-      final slug = json['slug'] as String?;
-      final confidence = (json['confidence'] as num?)?.toDouble() ?? 0.0;
+      final subject = (json['subject'] as String?)?.trim().toLowerCase();
+      final slug = (json['slug'] as String?)?.trim().toLowerCase();
 
       if (subject == null || slug == null) return null;
 
-      final topic = TaxonomyLoader.findBySlug(_topics, slug);
-      if (topic == null || topic.subject != subject) return null;
+      // Resolve by (subject, slug) pair so two slugs with the same name in
+      // different subjects don't collide.
+      final topic = _topics.firstWhere(
+        (t) => t.subject == subject && t.slug == slug,
+        orElse: () => const Topic(subject: '', slug: '', displayName: ''),
+      );
+      if (topic.subject.isEmpty) return null;
 
-      return ClassificationResult(topic: topic, confidence: confidence);
+      return ClassificationResult(topic: topic);
     } catch (_) {
       return null;
     }

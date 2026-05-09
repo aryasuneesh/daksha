@@ -54,19 +54,24 @@ Answer<Future<InferenceResponse>> _dispatchAnswer({
   String? incorrectJson,
   String? hintJson,
 }) {
+  // Prompt-content fingerprints below match the *current* prompt strings in
+  // TopicClassifier and SocraticService. When those prompts change (e.g.
+  // adding more few-shot examples), update these matchers too.
   return (Invocation inv) async {
     final req = inv.positionalArguments.first as InferenceRequest;
     final prompt = req.prompt;
 
-    // Classify prompt contains "subject/topic" slug list
-    if (prompt.contains('math/linear-equations')) {
+    // Classifier prompt opens with this exact line; far more specific than
+    // the slug list it contains, which is now interleaved with display
+    // names rather than the old `subject/slug` pairs.
+    if (prompt.contains('You classify a school problem')) {
       if (classifyJson == null) {
         return const InferenceResponse.failure(error: 'classify disabled');
       }
       return InferenceResponse.success(text: classifyJson, tokensGenerated: 10);
     }
 
-    // Hint prompt contains "Hint level:"
+    // Hint prompt still contains 'Hint level:'.
     if (prompt.contains('Hint level:')) {
       if (hintJson == null) {
         return const InferenceResponse.failure(error: 'hint disabled');
@@ -74,8 +79,9 @@ Answer<Future<InferenceResponse>> _dispatchAnswer({
       return InferenceResponse.success(text: hintJson, tokensGenerated: 10);
     }
 
-    // checkAttempt prompt contains "Student's answer:"
-    if (prompt.contains("Student's answer:")) {
+    // judgeOrReply prompt routes by phrase — the inputs are now framed as
+    // 'The student just said:' rather than the old 'Student's answer:'.
+    if (prompt.contains('The student just said:')) {
       if (prompt.contains(_mathFixture.sampleCorrectAttempt)) {
         if (correctJson == null) {
           return const InferenceResponse.failure(error: 'correct disabled');
@@ -91,7 +97,7 @@ Answer<Future<InferenceResponse>> _dispatchAnswer({
       }
     }
 
-    // opener prompt: "Ask one focused Socratic question"
+    // Default: opener.
     if (openerJson == null) {
       return const InferenceResponse.failure(error: 'opener disabled');
     }
@@ -121,8 +127,8 @@ void main() {
           classifyJson:
               '{"subject":"math","slug":"linear-equations","confidence":0.9}',
           openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
-          correctJson: '{"verdict":"correct","explanation":"Well done."}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"Not right."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Well done."}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Not right."}',
           hintJson: '{"hint":"Subtract 4 from both sides."}',
         ),
       );
@@ -141,8 +147,8 @@ void main() {
         _dispatchAnswer(
           // classifyJson omitted → engine returns failure for classify
           openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
-          correctJson: '{"verdict":"correct","explanation":"Well done."}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"Not right."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Well done."}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Not right."}',
           hintJson: '{"hint":"Subtract 4 from both sides."}',
         ),
       );
@@ -160,8 +166,8 @@ void main() {
           classifyJson:
               '{"subject":"math","slug":"linear-equations","confidence":0.9}',
           openerJson: '{"question":"What is the first step?","hint":"Move the constant."}',
-          correctJson: '{"verdict":"correct","explanation":"Yes!"}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"Nope."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Yes!"}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Nope."}',
           hintJson: '{"hint":"Start with addition."}',
         ),
       );
@@ -180,8 +186,8 @@ void main() {
           classifyJson:
               '{"subject":"math","slug":"linear-equations","confidence":0.9}',
           openerJson: '{"question":"Think about x.","hint":"Isolate the variable."}',
-          correctJson: '{"verdict":"correct","explanation":"Exactly right."}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"Wrong."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Exactly right."}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Wrong."}',
           hintJson: '{"hint":"Subtract 4."}',
         ),
       );
@@ -214,8 +220,8 @@ void main() {
           classifyJson:
               '{"subject":"math","slug":"linear-equations","confidence":0.9}',
           openerJson: '{"question":"Think.","hint":"Try again."}',
-          correctJson: '{"verdict":"correct","explanation":"Right."}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"Wrong."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Right."}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Wrong."}',
           hintJson: '{"hint":"Think harder."}',
         ),
       );
@@ -233,8 +239,8 @@ void main() {
           classifyJson:
               '{"subject":"math","slug":"linear-equations","confidence":0.9}',
           openerJson: '{"question":"Where to start?","hint":"The constant."}',
-          correctJson: '{"verdict":"correct","explanation":"Yes!"}',
-          incorrectJson: '{"verdict":"incorrect","explanation":"No."}',
+          correctJson: '{"kind":"attempt","verdict":"correct","reply":"Yes!"}',
+          incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"No."}',
           hintJson: '{"hint":"Subtract 4 from both sides."}',
         ),
       );
@@ -261,8 +267,8 @@ void main() {
         classifyJson:
             '{"subject":"math","slug":"linear-equations","confidence":0.9}',
         openerJson: '{"question":"What do you know?","hint":"Try isolating x."}',
-        correctJson: '{"verdict":"correct","explanation":"Well done."}',
-        incorrectJson: '{"verdict":"incorrect","explanation":"Try again — what comes off both sides first?"}',
+        correctJson: '{"kind":"attempt","verdict":"correct","reply":"Well done."}',
+        incorrectJson: '{"kind":"attempt","verdict":"incorrect","reply":"Try again — what comes off both sides first?"}',
         hintJson: '{"hint":"Subtract 4 from both sides."}',
       ));
 
@@ -293,7 +299,7 @@ void main() {
         // not equal the sample correct attempt). The leak lives in the
         // explanation.
         incorrectJson:
-            '{"verdict":"incorrect","explanation":"The answer is x = 3. Subtract 4 then divide."}',
+            '{"kind":"attempt","verdict":"incorrect","reply":"The answer is x = 3. Subtract 4 then divide."}',
       ));
 
       final harness = _buildHarness(engine, topics);
