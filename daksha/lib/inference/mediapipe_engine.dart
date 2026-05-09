@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter_gemma/flutter_gemma.dart';
 
+import 'package:daksha/core/constants/model.dart';
 import 'inference_engine.dart';
 
 /// Gemma 4 inference engine backed by flutter_gemma ≥0.14.1 (LiteRT-LM).
@@ -15,7 +14,7 @@ import 'inference_engine.dart';
 class MediaPipeEngine implements InferenceEngine {
   MediaPipeEngine({
     required this.modelPath,
-    int maxTokens = 512,
+    int maxTokens = kModelMaxTokens,
   }) : _maxTokens = maxTokens;
 
   final String modelPath;
@@ -38,7 +37,9 @@ class MediaPipeEngine implements InferenceEngine {
 
   @override
   Future<void> load() async {
-    await FlutterGemma.initialize();
+    // [main.dart] already calls FlutterGemma.initialize() at startup. Calling
+    // it a second time has caused double-allocation of native resources in
+    // some plugin versions, so we skip it here.
 
     if (!FlutterGemma.hasActiveModel()) {
       // Model wasn't installed via the onboarding screen (e.g. manual adb push).
@@ -57,10 +58,13 @@ class MediaPipeEngine implements InferenceEngine {
     // engine to skip vision-encoder initialisation, avoiding the
     // "must have exactly one signature but got 3" native crash.
     // When flutter_gemma is updated to support v1.5, flip this back to true.
-    _model = await FlutterGemma.getActiveModel(
+    final model = await FlutterGemma.getActiveModel(
       maxTokens: _maxTokens,
       supportImage: false,
     );
+    // Assign + flip _loaded together so dispose() is correct even if a future
+    // post-assignment step throws.
+    _model = model;
     _loaded = true;
   }
 
@@ -96,10 +100,19 @@ class MediaPipeEngine implements InferenceEngine {
 
   @override
   Future<void> dispose() async {
-    if (_loaded) {
-      await _model?.close();
-      _model = null;
-      _loaded = false;
+    // Always attempt to close the model — even if [load] failed mid-flight,
+    // [_model] may hold a half-initialised native handle that still needs
+    // releasing to avoid leaking GPU/OpenCL memory.
+    final model = _model;
+    _model = null;
+    _loaded = false;
+    if (model != null) {
+      try {
+        await model.close();
+      } catch (_) {
+        // Best-effort: a close after a failed load can throw on the native
+        // side. Swallow so dispose is idempotent.
+      }
     }
   }
 }

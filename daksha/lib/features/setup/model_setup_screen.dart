@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,23 +8,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'package:daksha/core/constants/model.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
 import 'package:daksha/features/common/buttons.dart';
-
-// ── Model constants ───────────────────────────────────────────────────────────
-
-/// HuggingFace URL for the Gemma 4 E4B instruction-tuned LiteRT-LM model.
-///
-/// Uses the /resolve/ redirect endpoint which bounces to HuggingFace's CDN
-/// (cdn-lfs-us-1.huggingface.co). dart:io HttpClient follows the redirect
-/// automatically and gets a proper Content-Length for progress tracking.
-const _kModelUrl =
-    'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm'
-    '/resolve/main/gemma-4-E4B-it.litertlm';
-
-const _kModelFilename = 'gemma-4-E4B-it.litertlm';
-const _kModelSizeBytes = 3_921_000_000; // ~3.65 GB, used as fallback
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +33,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
   _SetupState _state = _SetupState.idle;
   double _progress = 0.0;   // 0.0 – 1.0
   int _receivedBytes = 0;
-  int _totalBytes = _kModelSizeBytes;
+  int _totalBytes = kModelSizeBytes;
   double _speedBytesPerSec = 0.0;
   String? _errorMessage;
 
@@ -73,7 +59,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       _state = _SetupState.downloading;
       _progress = 0.0;
       _receivedBytes = 0;
-      _totalBytes = _kModelSizeBytes;
+      _totalBytes = kModelSizeBytes;
       _speedBytesPerSec = 0.0;
       _errorMessage = null;
     });
@@ -86,7 +72,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       final dir = await getApplicationSupportDirectory();
       final modelDir = Directory('${dir.path}/models');
       await modelDir.create(recursive: true);
-      final targetPath = '${modelDir.path}/$_kModelFilename';
+      final targetPath = '${modelDir.path}/$kModelFilename';
       tempFile = File(targetPath);
 
       // Remove any partial file from a previous attempt so we start clean.
@@ -112,7 +98,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       client.connectionTimeout = const Duration(seconds: 30);
       client.idleTimeout = const Duration(seconds: 60);
 
-      final request = await client.getUrl(Uri.parse(_kModelUrl));
+      final request = await client.getUrl(Uri.parse(kModelUrl));
       request.headers.add(HttpHeaders.connectionHeader, 'keep-alive');
       final response = await request.close();
 
@@ -156,7 +142,13 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
           }
         }
       } finally {
-        await sink.flush();
+        // Cancellation path: HttpClient.close(force: true) tears down the
+        // socket from under us; flushing a force-closed stream throws on some
+        // Android versions. Swallow flush errors so the outer catch reports
+        // the original cause (or success) rather than a misleading I/O error.
+        try {
+          await sink.flush();
+        } catch (_) {}
         await sink.close();
       }
       _activeClient = null;
@@ -559,6 +551,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
-// ignore: unused_element
-double _log10(num x) => math.log(x) / math.ln10;

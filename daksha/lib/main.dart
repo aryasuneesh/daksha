@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'app/app.dart';
-
-// The model filename must match what ModelSetupScreen downloads.
-const _kModelFilename = 'gemma-4-E4B-it.litertlm';
+import 'core/constants/model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,16 +22,16 @@ void main() async {
   // full 3.65 GB model every time they switch build types.
   if (!FlutterGemma.hasActiveModel()) {
     final dir = await getApplicationSupportDirectory();
-    final modelFile = File(p.join(dir.path, 'models', _kModelFilename));
+    final modelFile = File(p.join(dir.path, 'models', kModelFilename));
     if (await modelFile.exists()) {
       final fileSize = await modelFile.length();
-      // The full Gemma 4 E4B IT LiteRT model is ~3.65 GB (3,921,000,000 bytes).
-      // A file smaller than 3.5 GB is a partial download from a previous failed
-      // attempt (e.g. WorkManager timeout at 33%).  Registering a truncated file
-      // causes MediaPipe to throw "Model may be invalid" at engine load time.
-      // Delete the partial file so ModelSetupScreen shows the download flow
-      // instead of silently bypassing it with a broken registration.
-      if (fileSize >= 3_500_000_000) {
+      // A file smaller than [kModelMinValidBytes] is a partial download from a
+      // previous failed attempt (e.g. WorkManager timeout at 33%). Registering
+      // a truncated file causes MediaPipe to throw "Model may be invalid" at
+      // engine load time. Delete the partial file so ModelSetupScreen shows
+      // the download flow instead of silently bypassing it with a broken
+      // registration.
+      if (fileSize >= kModelMinValidBytes) {
         // fromFile() only writes the path to SharedPreferences — no copy.
         await FlutterGemma.installModel(
           modelType: ModelType.gemma4,
