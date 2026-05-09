@@ -66,10 +66,14 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomActionBar(
-        children: [
+        children: const [
+          // Disabled until the recommendation pipeline is wired up — leaving
+          // the button enabled with an empty callback gave kids a tappable
+          // control that did nothing.
           PrimaryButton(
             label: 'Practice weakest now',
-            onPressed: () {},
+            onPressed: null,
+            enabled: false,
           ),
         ],
       ),
@@ -132,7 +136,8 @@ class _WeakTopicCard extends StatelessWidget {
           Expanded(
             child: Text(topicName, style: DakshaTypography.body),
           ),
-          DakshaTextButton(label: 'Practice →', onPressed: () {}),
+          // Disabled until the recommendation pipeline is wired up.
+          const DakshaTextButton(label: 'Practice →', onPressed: null),
         ],
       ),
     );

@@ -45,11 +45,14 @@ void main() {
       expect(find.byType(BottomActionBar), findsOneWidget);
     });
 
-    testWidgets('renders Start review button', (tester) async {
+    testWidgets('renders View history button', (tester) async {
       await tester.pumpWidget(_wrap(const HomeScreen()));
       await tester.pump();
 
-      expect(find.textContaining('Start review'), findsOneWidget);
+      // The home CTA is "View history" (with optional " (n)" suffix when
+      // the database has problems). The label was renamed from the
+      // never-implemented "Start review" flow.
+      expect(find.textContaining('View history'), findsOneWidget);
     });
   });
 }

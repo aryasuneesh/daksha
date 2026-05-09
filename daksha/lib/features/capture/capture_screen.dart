@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -99,7 +101,12 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
         ),
       ],
     );
-    if (croppedFile == null) return; // user cancelled crop
+    if (croppedFile == null) {
+      // Crop cancelled — still clean up the camera capture so it doesn't
+      // accumulate in the cache directory across sessions.
+      await _safeDelete(photo.path);
+      return;
+    }
 
     // Step 3 — OCR on the cropped region
     _ocrNotifier.value = (loading: true, text: null);
@@ -120,6 +127,24 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> {
           text: 'Could not read problem — please try again.',
         );
       }
+    } finally {
+      // Delete the cropped output and (if different) the original camera
+      // capture so the app cache doesn't fill with multi-megapixel JPEGs.
+      // Best-effort: ignore I/O errors — the OS will clean up its own cache
+      // eventually.
+      await _safeDelete(croppedFile.path);
+      if (photo.path != croppedFile.path) {
+        await _safeDelete(photo.path);
+      }
+    }
+  }
+
+  Future<void> _safeDelete(String path) async {
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (_) {
+      // Swallow — failure to delete a temp file is not user-actionable.
     }
   }
 

@@ -182,7 +182,6 @@ void main() {
         'biology': (10, 2),
       };
 
-      var idx = 0;
       for (final entry in subjects.entries) {
         final (total, solved) = entry.value;
         for (var i = 0; i < total; i++) {
@@ -196,7 +195,6 @@ void main() {
                   solved: Value(i < solved),
                 ),
               );
-          idx++;
         }
       }
 

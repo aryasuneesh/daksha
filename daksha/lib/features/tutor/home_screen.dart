@@ -16,6 +16,17 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(problemCountProvider);
+    // Pre-warm the inference engine on home so the first /problem visit
+    // does not block on a ~2.26 GB GPU/OpenCL load. The provider is cached
+    // for the rest of the app lifetime.
+    final engineAsync = ref.watch(engineProvider);
+    final engineReady = engineAsync.hasValue;
+    final engineError = engineAsync.error;
+
+    void goCapture() {
+      if (!engineReady) return;
+      context.push('/capture');
+    }
 
     return Scaffold(
       backgroundColor: DT.bg,
@@ -31,9 +42,10 @@ class HomeScreen extends ConsumerWidget {
               style: DakshaTypography.display.copyWith(color: DT.textStrong),
             ),
             const SizedBox(height: DT.xs),
-            Text(
-              '0 due · 0-day streak',
-              style: DakshaTypography.sm.copyWith(color: DT.muted),
+            _StatusLine(
+              count: count,
+              engineReady: engineReady,
+              engineError: engineError,
             ),
             const SizedBox(height: DT.lg),
             const SubjectGridHome(),
@@ -44,13 +56,13 @@ class HomeScreen extends ConsumerWidget {
                   Expanded(
                     child: DakshaTextButton(
                       label: '📷 Photo',
-                      onPressed: () => context.go('/capture'),
+                      onPressed: engineReady ? goCapture : null,
                     ),
                   ),
                   Expanded(
                     child: DakshaTextButton(
                       label: '✏ Type',
-                      onPressed: () => context.go('/capture'),
+                      onPressed: engineReady ? goCapture : null,
                     ),
                   ),
                 ],
@@ -68,6 +80,53 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Replaces the hardcoded "0 due · 0-day streak" line with a real, contextual
+/// status: shows engine warm-up state and surfaces load errors so the user
+/// understands why the action buttons are temporarily disabled instead of
+/// tapping into a frozen UI.
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({
+    required this.count,
+    required this.engineReady,
+    required this.engineError,
+  });
+
+  final int count;
+  final bool engineReady;
+  final Object? engineError;
+
+  @override
+  Widget build(BuildContext context) {
+    if (engineError != null) {
+      return Text(
+        'Daksha could not start — close other apps and reopen.',
+        style: DakshaTypography.sm.copyWith(color: DT.error),
+      );
+    }
+    if (!engineReady) {
+      return Row(
+        children: [
+          const SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: DT.sm),
+          Text(
+            'Warming up Daksha…',
+            style: DakshaTypography.sm.copyWith(color: DT.muted),
+          ),
+        ],
+      );
+    }
+    final solvedSuffix = count == 1 ? '' : 's';
+    return Text(
+      '$count problem$solvedSuffix solved',
+      style: DakshaTypography.sm.copyWith(color: DT.muted),
     );
   }
 }
