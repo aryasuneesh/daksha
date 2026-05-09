@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:daksha/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:daksha/core/theme.dart';
@@ -10,6 +11,9 @@ import 'package:daksha/features/tutor/home_screen.dart';
 Widget _wrap(Widget child) => ProviderScope(
       child: MaterialApp.router(
         theme: buildDakshaTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: GoRouter(
           initialLocation: '/',
           routes: [

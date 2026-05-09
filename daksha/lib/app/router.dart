@@ -4,26 +4,38 @@ import 'package:daksha/features/parent/gate_screen.dart';
 import 'package:daksha/features/parent/setup_screen.dart';
 import 'package:daksha/features/parent/shell_screen.dart';
 import 'package:daksha/features/parent/voice_screen.dart';
+import 'package:daksha/features/setup/language_picker_screen.dart';
 import 'package:daksha/features/setup/model_setup_screen.dart';
+import 'package:daksha/features/settings/settings_screen.dart';
 import 'package:daksha/features/history/history_screen.dart';
 import 'package:daksha/features/tutor/dashboard_screen.dart';
 import 'package:daksha/features/tutor/home_screen.dart';
 import 'package:daksha/features/tutor/problem_screen.dart';
 import 'package:daksha/features/tutor/solved_screen.dart';
+import 'package:daksha/features/tutor/subject_topics_screen.dart';
 import 'package:daksha/storage/database/app_database.dart';
 
 /// Creates the app router.
 ///
-/// [needsSetup] — when true the router starts at /setup (first launch, no
-/// model downloaded yet).  After the model is installed the setup screen
-/// navigates to /, from which point the router behaves normally.
-GoRouter createRouter({bool needsSetup = false}) {
+/// [initialLocation] — chosen by main() based on (modelPresent, localePicked):
+///   - '/setup'           — no model yet, run download flow
+///   - '/setup/language'  — model present but locale not yet picked
+///   - '/'                — fully bootstrapped, go home
+GoRouter createRouter({String initialLocation = '/'}) {
   return GoRouter(
-    initialLocation: needsSetup ? '/setup' : '/',
+    initialLocation: initialLocation,
     routes: [
       GoRoute(
         path: '/setup',
         builder: (context, state) => const ModelSetupScreen(),
+      ),
+      GoRoute(
+        path: '/setup/language',
+        builder: (context, state) => const LanguagePickerScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/',
@@ -61,6 +73,11 @@ GoRouter createRouter({bool needsSetup = false}) {
       GoRoute(
         path: '/history',
         builder: (context, state) => const HistoryScreen(),
+      ),
+      GoRoute(
+        path: '/subject/:name',
+        builder: (context, state) =>
+            SubjectTopicsScreen(name: state.pathParameters['name'] ?? ''),
       ),
       GoRoute(
         path: '/dashboard',

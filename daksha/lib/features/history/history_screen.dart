@@ -46,11 +46,46 @@ class HistoryScreen extends ConsumerWidget {
                     '/problem',
                     extra: value[i],
                   ),
+                  onDelete: () => _confirmAndDelete(context, ref, value[i]),
                 ),
               ),
         _ => const SizedBox.shrink(),
       },
     );
+  }
+
+  Future<void> _confirmAndDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Problem problem,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DT.elev1,
+        title: const Text('Delete problem?', style: DakshaTypography.headingMd),
+        content: const Text(
+          'This will permanently remove the problem and its conversation.',
+          style: DakshaTypography.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel',
+                style: DakshaTypography.body.copyWith(color: DT.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Delete',
+                style: DakshaTypography.body
+                    .copyWith(color: DT.error, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final db = await ref.read(dbProvider.future);
+    await db.deleteProblem(problem.id);
   }
 }
 
@@ -126,10 +161,15 @@ class _EmptyState extends StatelessWidget {
 // ── Problem tile ──────────────────────────────────────────────────────────────
 
 class _ProblemTile extends StatelessWidget {
-  const _ProblemTile({required this.problem, required this.onTap});
+  const _ProblemTile({
+    required this.problem,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final Problem problem;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +178,7 @@ class _ProblemTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPressStart: (details) => _showContextMenu(context, details.globalPosition),
       child: Container(
         padding: const EdgeInsets.all(DT.cardHPad),
         decoration: BoxDecoration(
@@ -224,6 +265,37 @@ class _ProblemTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showContextMenu(BuildContext context, Offset globalPosition) async {
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final selected = await showMenu<String>(
+      context: context,
+      color: DT.elev1,
+      position: RelativeRect.fromLTRB(
+        globalPosition.dx,
+        globalPosition.dy,
+        overlay.size.width - globalPosition.dx,
+        overlay.size.height - globalPosition.dy,
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline, size: 18, color: DT.error),
+              const SizedBox(width: DT.sm),
+              Text(
+                'Delete',
+                style: DakshaTypography.body.copyWith(color: DT.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (selected == 'delete') onDelete();
   }
 
   Color _subjectColor(String subject) {

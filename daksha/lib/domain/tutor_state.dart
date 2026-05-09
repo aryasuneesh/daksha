@@ -27,13 +27,19 @@ class TutorVerdictEvent {
 
 @freezed
 sealed class TutorState with _$TutorState {
-  const factory TutorState.idle() = TutorIdle;
-  const factory TutorState.classifying(String problemText) = TutorClassifying;
+  const factory TutorState.idle({
+    @Default(false) bool isHintLoading,
+  }) = TutorIdle;
+  const factory TutorState.classifying(
+    String problemText, {
+    @Default(false) bool isHintLoading,
+  }) = TutorClassifying;
   const factory TutorState.asking({
     required String problemText,
     required Topic topic,
     required String opener,
     required String problemId,
+    @Default(false) bool isHintLoading,
   }) = TutorAsking;
   const factory TutorState.checking({
     required String problemText,
@@ -43,6 +49,7 @@ sealed class TutorState with _$TutorState {
     // The Socratic opener from TutorAsking — carried through so the chat
     // can display the full conversation history (opener → attempt → spinner).
     required String opener,
+    @Default(false) bool isHintLoading,
   }) = TutorChecking;
   const factory TutorState.hinting({
     required String problemText,
@@ -53,6 +60,7 @@ sealed class TutorState with _$TutorState {
     required DateTime firstHintAt,
     // Opener carried through for consistent conversation display.
     required String opener,
+    @Default(false) bool isHintLoading,
   }) = TutorHinting;
   const factory TutorState.solved({
     required String problemId,
@@ -63,5 +71,6 @@ sealed class TutorState with _$TutorState {
     required String problemText,
     required Topic topic,
     required String opener,
+    @Default(false) bool isHintLoading,
   }) = TutorSolved;
 }

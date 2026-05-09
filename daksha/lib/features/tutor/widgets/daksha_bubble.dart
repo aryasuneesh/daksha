@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
 
@@ -48,7 +49,32 @@ class DakshaBubble extends StatelessWidget {
                 ),
                 border: Border.all(color: DT.outline, width: DT.bwCard),
               ),
-              child: Text(text, style: DakshaTypography.body),
+              // Gemma emits markdown (bold, italics, lists) for explanations,
+              // so render it instead of showing raw asterisks. User-typed
+              // messages stay plain Text in StudentBubble — only assistant
+              // turns flow through here.
+              //
+              // TODO: LaTeX math (e.g. $$x = \frac{-b}{2a}$$, \(...\)) is not
+              // yet rendered. Adding flutter_math_fork requires a custom
+              // MarkdownElementBuilder for `$$...$$` fences and inline `\(...\)`
+              // detection — deferred until the markdown path stabilises.
+              child: MarkdownBody(
+                data: text,
+                selectable: false,
+                styleSheet:
+                    MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                  p: DakshaTypography.body,
+                  listBullet: DakshaTypography.body,
+                  code: DakshaTypography.body.copyWith(
+                    fontFamily: 'DMMono',
+                    backgroundColor: DT.elev2,
+                  ),
+                  codeblockDecoration: BoxDecoration(
+                    color: DT.elev2,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

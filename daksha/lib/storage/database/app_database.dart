@@ -118,6 +118,80 @@ class AppDatabase extends _$AppDatabase implements ProblemStore, AuthStore, Pare
         .watch();
   }
 
+  /// Deletes a problem and its conversation turns atomically.
+  /// The schema has no FK cascade, so we wipe turns in the same transaction.
+  Future<void> deleteProblem(String id) async {
+    await transaction(() async {
+      await (delete(conversationTurns)
+            ..where((t) => t.problemId.equals(id)))
+          .go();
+      await (delete(problems)..where((t) => t.id.equals(id))).go();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Learner profile / streak
+  // ---------------------------------------------------------------------------
+
+  /// Returns the current streak in days, or 0 if no learner profile row.
+  Future<int> getStreakDays() async {
+    final row = await (select(learnerProfile)..limit(1)).getSingleOrNull();
+    return row?.streakDays ?? 0;
+  }
+
+  /// Stream of the streak — emits on any change to learner_profile.
+  Stream<int> watchStreakDays() {
+    return (select(learnerProfile)..limit(1))
+        .watchSingleOrNull()
+        .map((row) => row?.streakDays ?? 0);
+  }
+
+  /// Records that the learner did something today. Updates streak based on
+  /// the calendar-day delta from the last activity:
+  ///   - same calendar day → streak unchanged
+  ///   - exactly 1 day ago → streak + 1
+  ///   - never / > 1 day ago → streak resets to 1
+  /// Always bumps `lastActiveAt` to [now]. Single-row table (id=1).
+  @override
+  Future<void> recordActivity(DateTime now) async {
+    final existing = await (select(learnerProfile)..limit(1)).getSingleOrNull();
+    final today = DateTime(now.year, now.month, now.day);
+
+    int newStreak;
+    if (existing == null || existing.lastActiveAt == null) {
+      newStreak = 1;
+    } else {
+      final last = existing.lastActiveAt!;
+      final lastDay = DateTime(last.year, last.month, last.day);
+      final diffDays = today.difference(lastDay).inDays;
+      if (diffDays == 0) {
+        newStreak = existing.streakDays;
+      } else if (diffDays == 1) {
+        newStreak = existing.streakDays + 1;
+      } else {
+        newStreak = 1;
+      }
+    }
+
+    if (existing == null) {
+      await into(learnerProfile).insert(
+        LearnerProfileCompanion.insert(
+          name: 'Learner',
+          streakDays: Value(newStreak),
+          lastActiveAt: Value(now),
+        ),
+      );
+    } else {
+      await (update(learnerProfile)..where((t) => t.id.equals(existing.id)))
+          .write(
+        LearnerProfileCompanion(
+          streakDays: Value(newStreak),
+          lastActiveAt: Value(now),
+        ),
+      );
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // AuthStore implementation
   // ---------------------------------------------------------------------------

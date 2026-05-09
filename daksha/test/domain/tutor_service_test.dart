@@ -143,6 +143,9 @@ class FakeStore implements ProblemStore {
   }
 
   bool? solvedFor(String id) => _solved[id];
+
+  @override
+  Future<void> recordActivity(DateTime now) async {}
 }
 
 // ---------------------------------------------------------------------------

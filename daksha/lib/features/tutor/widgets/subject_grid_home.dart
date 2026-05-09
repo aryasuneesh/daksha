@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:daksha/app/providers.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/domain/taxonomy.dart';
@@ -48,6 +49,7 @@ class SubjectGridHome extends ConsumerWidget {
               : _topicDisplay(topics, latest.subject, latest.topic),
           progress: totalForSubject == 0 ? 0.0 : solvedCount / totalForSubject,
           dueCount: 0,
+          onTap: () => context.push('/subject/$subject'),
         );
       }).toList(),
     );

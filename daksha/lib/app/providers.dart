@@ -121,6 +121,16 @@ final turnsProvider = StreamProvider.family<
   return key.db.watchTurns(key.problemId);
 });
 
+/// Stream of the learner's current streak in days (for the home top bar).
+///
+/// Mirrors [problemsProvider]'s pattern: depends on [dbProvider], emits
+/// nothing until the DB is ready, then auto-updates whenever the learner
+/// profile row is touched (e.g. when [TutorService] calls recordActivity).
+final streakDaysProvider = StreamProvider<int>((ref) async* {
+  final db = await ref.watch(dbProvider.future);
+  yield* db.watchStreakDays();
+});
+
 /// Count of all problems stored so far (for the home screen badge).
 final problemCountProvider = Provider<int>((ref) {
   return ref.watch(problemsProvider).whenData((list) => list.length).value ?? 0;

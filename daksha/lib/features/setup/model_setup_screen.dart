@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import 'package:daksha/app/locale_provider.dart';
 import 'package:daksha/core/constants/model.dart';
 import 'package:daksha/core/design_tokens.dart';
 import 'package:daksha/core/typography.dart';
@@ -20,16 +22,16 @@ import 'package:daksha/features/common/buttons.dart';
 /// Downloads using dart:io [HttpClient] directly — no WorkManager, no 10-minute
 /// OS timeout, full network speed. After streaming to disk, registers the file
 /// with flutter_gemma via [fromFile], which is instant (no copy).
-class ModelSetupScreen extends StatefulWidget {
+class ModelSetupScreen extends ConsumerStatefulWidget {
   const ModelSetupScreen({super.key});
 
   @override
-  State<ModelSetupScreen> createState() => _ModelSetupScreenState();
+  ConsumerState<ModelSetupScreen> createState() => _ModelSetupScreenState();
 }
 
 enum _SetupState { idle, downloading, loadingFile, done, error }
 
-class _ModelSetupScreenState extends State<ModelSetupScreen> {
+class _ModelSetupScreenState extends ConsumerState<ModelSetupScreen> {
   _SetupState _state = _SetupState.idle;
   double _progress = 0.0;   // 0.0 – 1.0
   int _receivedBytes = 0;
@@ -165,7 +167,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       if (mounted) {
         setState(() => _state = _SetupState.done);
         await Future<void>.delayed(const Duration(milliseconds: 800));
-        if (mounted) context.go('/');
+        if (mounted) _goPostSetup();
       }
     } catch (e) {
       // Clean up partial file so the next attempt starts fresh.
@@ -213,7 +215,7 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
       if (mounted) {
         setState(() => _state = _SetupState.done);
         await Future<void>.delayed(const Duration(milliseconds: 800));
-        if (mounted) context.go('/');
+        if (mounted) _goPostSetup();
       }
     } catch (e) {
       if (mounted) {
@@ -223,6 +225,15 @@ class _ModelSetupScreenState extends State<ModelSetupScreen> {
         });
       }
     }
+  }
+
+  /// Post-install routing decision: if the user has not yet picked a language
+  /// (first install on a fresh device) send them to the picker; otherwise
+  /// (e.g. file-loaded install on a device whose secure storage already has
+  /// a locale from a previous run) skip the picker and go straight home.
+  void _goPostSetup() {
+    final hasLocale = ref.read(localeProvider) != null;
+    context.go(hasLocale ? '/' : '/setup/language');
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

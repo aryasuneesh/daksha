@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:daksha/l10n/app_localizations.dart';
 import 'package:daksha/core/theme.dart';
+import 'package:daksha/app/locale_provider.dart';
 import 'package:daksha/app/router.dart';
 
-class DakshaApp extends StatelessWidget {
-  const DakshaApp({super.key, required this.needsSetup});
+class DakshaApp extends ConsumerWidget {
+  const DakshaApp({super.key, required this.initialLocation});
 
-  /// When true the router starts at /setup (model not yet downloaded).
-  final bool needsSetup;
+  /// Starting route picked by main() based on (modelPresent, localePicked).
+  final String initialLocation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+
     // AnnotatedRegion sets dark status-bar icons (correct for the light Warm
     // Desk theme) without needing an AppBar to own the overlay style.
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -23,7 +28,13 @@ class DakshaApp extends StatelessWidget {
         title: 'Daksha',
         debugShowCheckedModeBanner: false,
         theme: buildDakshaTheme(),
-        routerConfig: createRouter(needsSetup: needsSetup),
+        // null → MaterialApp falls back to device locale. Once the user picks
+        // a language in /setup/language or Settings the notifier emits a
+        // concrete Locale and the whole tree rebuilds in the new language.
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: createRouter(initialLocation: initialLocation),
       ),
     );
   }

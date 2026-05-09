@@ -1,0 +1,53 @@
+{
+  "@@locale": "en",
+  "appTitle": "Daksha",
+  "goodMorning": "Good morning",
+  "home": "Home",
+  "history": "History",
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "hindi": "Hindi",
+  "malayalam": "Malayalam",
+  "chooseLanguage": "Choose your language",
+  "chooseLanguageSubtitle": "You can change this anytime in Settings.",
+  "continueLabel": "Continue",
+  "viewHistory": "View history",
+  "viewHistoryWithCount": "View history ({count})",
+  "@viewHistoryWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noRecentActivity": "No recent activity",
+  "streakDays": "{count, plural, =0{No streak yet} =1{1-day streak} other{{count}-day streak}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "problemsSolved": "{count, plural, =0{No problems solved yet} =1{1 problem solved} other{{count} problems solved}}",
+  "@problemsSolved": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "replayTutorial": "Replay walkthrough",
+  "aboutDaksha": "About",
+  "aboutBody": "Daksha is an on-device Socratic study buddy for grades 5–8. Built for educational use; everything stays on your device.",
+  "back": "Back",
+  "warmingUp": "Warming up Daksha…",
+  "engineFailed": "Daksha could not start — close other apps and reopen.",
+  "openSettings": "Open settings",
+  "tourSubjectsTitle": "Pick a subject",
+  "tourSubjectsBody": "Tap a subject card to see what you've studied and start a new problem.",
+  "tourCaptureTitle": "Capture a problem",
+  "tourCaptureBody": "Snap a photo of your textbook or type a problem to begin.",
+  "tourHistoryTitle": "Your history",
+  "tourHistoryBody": "Past problems and explanations are saved here.",
+  "tourStreakTitle": "Daily streak",
+  "tourStreakBody": "Solve at least one problem each day to keep your streak going.",
+  "tourSkip": "Skip",
+  "tourNext": "Next",
+  "tourDone": "Got it"
+}

@@ -59,6 +59,11 @@ abstract interface class ProblemStore {
   /// [TutorService.resumeProblem] to rebuild conversation context for
   /// the model and let the chat replay past content.
   Future<List<StoredTurn>> readTurns(String problemId);
+
+  /// Records a learner activity timestamp — used to drive the home-screen
+  /// streak counter. Default is a no-op so non-DB fakes (e.g. test stores)
+  /// don't have to implement it.
+  Future<void> recordActivity(DateTime now) async {}
 }
 
 /// Sink the service uses to publish fire-once verdict events.
@@ -122,6 +127,12 @@ class TutorService extends StateNotifier<TutorState> {
       topicSlug: topic.slug,
       createdAt: _clock(),
     );
+
+    // Mark today as an active day for the streak counter on the home screen.
+    // Done here rather than at the home screen so the streak only ticks when
+    // the learner actually starts a new problem (real engagement), not on
+    // every passive home-screen visit.
+    await _store.recordActivity(_clock());
 
     // Persist the opener so re-opening this problem from history shows the
     // same conversation thread instead of a fresh classifier run.
@@ -306,33 +317,57 @@ class TutorService extends StateNotifier<TutorState> {
     final now = _clock();
     final newFirstHintAt = firstHintAt ?? now;
 
-    final hint = await _socratic.generateHint(
-      problemText: problemText,
-      topic: topic,
-      hintLevel: newLevel,
-    );
-    if (hint == null) return;
-
-    // Persist hints with a level prefix so the resumed chat still shows
-    // "Hint 2: …" months later, even after the in-memory level counter
-    // is gone.
-    await _appendTurn(problemId, TurnRole.daksha, 'Hint $newLevel: $hint');
-
-    final opener = switch (current) {
-      TutorAsking(:final opener)  => opener,
-      TutorHinting(:final opener) => opener,
-      _ => '',
+    // Reflect hint-in-flight state so the UI can disable the button and show
+    // a spinner; without this the student spam-taps and may crash the app.
+    state = switch (current) {
+      TutorAsking()  => current.copyWith(isHintLoading: true),
+      TutorHinting() => current.copyWith(isHintLoading: true),
+      _ => current,
     };
 
-    state = TutorState.hinting(
-      problemText: problemText,
-      topic: topic,
-      level: newLevel,
-      hint: hint,
-      problemId: problemId,
-      firstHintAt: newFirstHintAt,
-      opener: opener,
-    );
+    try {
+      final hint = await _socratic.generateHint(
+        problemText: problemText,
+        topic: topic,
+        hintLevel: newLevel,
+      );
+      if (hint == null) {
+        // Restore the prior state (loading flag cleared) so the button
+        // becomes tappable again after a failed/empty inference.
+        state = current;
+        return;
+      }
+
+      // Persist hints with a level prefix so the resumed chat still shows
+      // "Hint 2: …" months later, even after the in-memory level counter
+      // is gone.
+      await _appendTurn(problemId, TurnRole.daksha, 'Hint $newLevel: $hint');
+
+      final opener = switch (current) {
+        TutorAsking(:final opener)  => opener,
+        TutorHinting(:final opener) => opener,
+        _ => '',
+      };
+
+      state = TutorState.hinting(
+        problemText: problemText,
+        topic: topic,
+        level: newLevel,
+        hint: hint,
+        problemId: problemId,
+        firstHintAt: newFirstHintAt,
+        opener: opener,
+      );
+    } finally {
+      // Defensive: ensure the loading flag is never left stuck on regardless
+      // of which branch above ran.
+      final s = state;
+      if (s is TutorAsking && s.isHintLoading) {
+        state = s.copyWith(isHintLoading: false);
+      } else if (s is TutorHinting && s.isHintLoading) {
+        state = s.copyWith(isHintLoading: false);
+      }
+    }
   }
 
   void reset() {

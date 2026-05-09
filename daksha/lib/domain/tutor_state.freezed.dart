@@ -14,30 +14,61 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TutorState {
 
-
+ bool get isHintLoading;
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorStateCopyWith<TutorState> get copyWith => _$TutorStateCopyWithImpl<TutorState>(this as TutorState, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorState);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorState&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState()';
+  return 'TutorState(isHintLoading: $isHintLoading)';
 }
 
 
 }
 
 /// @nodoc
-class $TutorStateCopyWith<$Res>  {
-$TutorStateCopyWith(TutorState _, $Res Function(TutorState) __);
+abstract mixin class $TutorStateCopyWith<$Res>  {
+  factory $TutorStateCopyWith(TutorState value, $Res Function(TutorState) _then) = _$TutorStateCopyWithImpl;
+@useResult
+$Res call({
+ bool isHintLoading
+});
+
+
+
+
+}
+/// @nodoc
+class _$TutorStateCopyWithImpl<$Res>
+    implements $TutorStateCopyWith<$Res> {
+  _$TutorStateCopyWithImpl(this._self, this._then);
+
+  final TutorState _self;
+  final $Res Function(TutorState) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? isHintLoading = null,}) {
+  return _then(_self.copyWith(
+isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
 }
 
 
@@ -131,15 +162,15 @@ return solved(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( String problemText)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult Function( String problemId,  String problemText,  Topic topic,  String opener)?  solved,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool isHintLoading)?  idle,TResult Function( String problemText,  bool isHintLoading)?  classifying,TResult Function( String problemText,  Topic topic,  String opener,  String problemId,  bool isHintLoading)?  asking,TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener,  bool isHintLoading)?  checking,TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener,  bool isHintLoading)?  hinting,TResult Function( String problemId,  String problemText,  Topic topic,  String opener,  bool isHintLoading)?  solved,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
-return idle();case TutorClassifying() when classifying != null:
-return classifying(_that.problemText);case TutorAsking() when asking != null:
-return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
-return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _:
+return idle(_that.isHintLoading);case TutorClassifying() when classifying != null:
+return classifying(_that.problemText,_that.isHintLoading);case TutorAsking() when asking != null:
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId,_that.isHintLoading);case TutorChecking() when checking != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener,_that.isHintLoading);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener,_that.isHintLoading);case TutorSolved() when solved != null:
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener,_that.isHintLoading);case _:
   return orElse();
 
 }
@@ -157,15 +188,15 @@ return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( String problemText)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)  hinting,required TResult Function( String problemId,  String problemText,  Topic topic,  String opener)  solved,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool isHintLoading)  idle,required TResult Function( String problemText,  bool isHintLoading)  classifying,required TResult Function( String problemText,  Topic topic,  String opener,  String problemId,  bool isHintLoading)  asking,required TResult Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener,  bool isHintLoading)  checking,required TResult Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener,  bool isHintLoading)  hinting,required TResult Function( String problemId,  String problemText,  Topic topic,  String opener,  bool isHintLoading)  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle():
-return idle();case TutorClassifying():
-return classifying(_that.problemText);case TutorAsking():
-return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking():
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting():
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved():
-return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);}
+return idle(_that.isHintLoading);case TutorClassifying():
+return classifying(_that.problemText,_that.isHintLoading);case TutorAsking():
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId,_that.isHintLoading);case TutorChecking():
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener,_that.isHintLoading);case TutorHinting():
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener,_that.isHintLoading);case TutorSolved():
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener,_that.isHintLoading);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -179,15 +210,15 @@ return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( String problemText)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener)?  hinting,TResult? Function( String problemId,  String problemText,  Topic topic,  String opener)?  solved,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool isHintLoading)?  idle,TResult? Function( String problemText,  bool isHintLoading)?  classifying,TResult? Function( String problemText,  Topic topic,  String opener,  String problemId,  bool isHintLoading)?  asking,TResult? Function( String problemText,  Topic topic,  String attempt,  String problemId,  String opener,  bool isHintLoading)?  checking,TResult? Function( String problemText,  Topic topic,  int level,  String hint,  String problemId,  DateTime firstHintAt,  String opener,  bool isHintLoading)?  hinting,TResult? Function( String problemId,  String problemText,  Topic topic,  String opener,  bool isHintLoading)?  solved,}) {final _that = this;
 switch (_that) {
 case TutorIdle() when idle != null:
-return idle();case TutorClassifying() when classifying != null:
-return classifying(_that.problemText);case TutorAsking() when asking != null:
-return asking(_that.problemText,_that.topic,_that.opener,_that.problemId);case TutorChecking() when checking != null:
-return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener);case TutorHinting() when hinting != null:
-return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener);case TutorSolved() when solved != null:
-return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _:
+return idle(_that.isHintLoading);case TutorClassifying() when classifying != null:
+return classifying(_that.problemText,_that.isHintLoading);case TutorAsking() when asking != null:
+return asking(_that.problemText,_that.topic,_that.opener,_that.problemId,_that.isHintLoading);case TutorChecking() when checking != null:
+return checking(_that.problemText,_that.topic,_that.attempt,_that.problemId,_that.opener,_that.isHintLoading);case TutorHinting() when hinting != null:
+return hinting(_that.problemText,_that.topic,_that.level,_that.hint,_that.problemId,_that.firstHintAt,_that.opener,_that.isHintLoading);case TutorSolved() when solved != null:
+return solved(_that.problemId,_that.problemText,_that.topic,_that.opener,_that.isHintLoading);case _:
   return null;
 
 }
@@ -199,46 +230,81 @@ return solved(_that.problemId,_that.problemText,_that.topic,_that.opener);case _
 
 
 class TutorIdle implements TutorState {
-  const TutorIdle();
+  const TutorIdle({this.isHintLoading = false});
   
 
+@override@JsonKey() final  bool isHintLoading;
 
-
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TutorIdleCopyWith<TutorIdle> get copyWith => _$TutorIdleCopyWithImpl<TutorIdle>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorIdle);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorIdle&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.idle()';
+  return 'TutorState.idle(isHintLoading: $isHintLoading)';
 }
 
 
 }
 
+/// @nodoc
+abstract mixin class $TutorIdleCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
+  factory $TutorIdleCopyWith(TutorIdle value, $Res Function(TutorIdle) _then) = _$TutorIdleCopyWithImpl;
+@override @useResult
+$Res call({
+ bool isHintLoading
+});
 
 
+
+
+}
+/// @nodoc
+class _$TutorIdleCopyWithImpl<$Res>
+    implements $TutorIdleCopyWith<$Res> {
+  _$TutorIdleCopyWithImpl(this._self, this._then);
+
+  final TutorIdle _self;
+  final $Res Function(TutorIdle) _then;
+
+/// Create a copy of TutorState
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? isHintLoading = null,}) {
+  return _then(TutorIdle(
+isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
 
 class TutorClassifying implements TutorState {
-  const TutorClassifying(this.problemText);
+  const TutorClassifying(this.problemText, {this.isHintLoading = false});
   
 
  final  String problemText;
+@override@JsonKey() final  bool isHintLoading;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TutorClassifyingCopyWith<TutorClassifying> get copyWith => _$TutorClassifyingCopyWithImpl<TutorClassifying>(this, _$identity);
 
@@ -246,16 +312,16 @@ $TutorClassifyingCopyWith<TutorClassifying> get copyWith => _$TutorClassifyingCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorClassifying&&(identical(other.problemText, problemText) || other.problemText == problemText));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorClassifying&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText);
+int get hashCode => Object.hash(runtimeType,problemText,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.classifying(problemText: $problemText)';
+  return 'TutorState.classifying(problemText: $problemText, isHintLoading: $isHintLoading)';
 }
 
 
@@ -264,9 +330,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $TutorClassifyingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
   factory $TutorClassifyingCopyWith(TutorClassifying value, $Res Function(TutorClassifying) _then) = _$TutorClassifyingCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String problemText
+ String problemText, bool isHintLoading
 });
 
 
@@ -283,10 +349,11 @@ class _$TutorClassifyingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? isHintLoading = null,}) {
   return _then(TutorClassifying(
 null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
-as String,
+as String,isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -297,17 +364,18 @@ as String,
 
 
 class TutorAsking implements TutorState {
-  const TutorAsking({required this.problemText, required this.topic, required this.opener, required this.problemId});
+  const TutorAsking({required this.problemText, required this.topic, required this.opener, required this.problemId, this.isHintLoading = false});
   
 
  final  String problemText;
  final  Topic topic;
  final  String opener;
  final  String problemId;
+@override@JsonKey() final  bool isHintLoading;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TutorAskingCopyWith<TutorAsking> get copyWith => _$TutorAskingCopyWithImpl<TutorAsking>(this, _$identity);
 
@@ -315,16 +383,16 @@ $TutorAskingCopyWith<TutorAsking> get copyWith => _$TutorAskingCopyWithImpl<Tuto
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorAsking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.problemId, problemId) || other.problemId == problemId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorAsking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText,topic,opener,problemId);
+int get hashCode => Object.hash(runtimeType,problemText,topic,opener,problemId,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.asking(problemText: $problemText, topic: $topic, opener: $opener, problemId: $problemId)';
+  return 'TutorState.asking(problemText: $problemText, topic: $topic, opener: $opener, problemId: $problemId, isHintLoading: $isHintLoading)';
 }
 
 
@@ -333,9 +401,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $TutorAskingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
   factory $TutorAskingCopyWith(TutorAsking value, $Res Function(TutorAsking) _then) = _$TutorAskingCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String problemText, Topic topic, String opener, String problemId
+ String problemText, Topic topic, String opener, String problemId, bool isHintLoading
 });
 
 
@@ -352,13 +420,14 @@ class _$TutorAskingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? opener = null,Object? problemId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? opener = null,Object? problemId = null,Object? isHintLoading = null,}) {
   return _then(TutorAsking(
 problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
 as Topic,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
 as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
-as String,
+as String,isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -369,7 +438,7 @@ as String,
 
 
 class TutorChecking implements TutorState {
-  const TutorChecking({required this.problemText, required this.topic, required this.attempt, required this.problemId, required this.opener});
+  const TutorChecking({required this.problemText, required this.topic, required this.attempt, required this.problemId, required this.opener, this.isHintLoading = false});
   
 
  final  String problemText;
@@ -379,10 +448,11 @@ class TutorChecking implements TutorState {
 // The Socratic opener from TutorAsking — carried through so the chat
 // can display the full conversation history (opener → attempt → spinner).
  final  String opener;
+@override@JsonKey() final  bool isHintLoading;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TutorCheckingCopyWith<TutorChecking> get copyWith => _$TutorCheckingCopyWithImpl<TutorChecking>(this, _$identity);
 
@@ -390,16 +460,16 @@ $TutorCheckingCopyWith<TutorChecking> get copyWith => _$TutorCheckingCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorChecking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.attempt, attempt) || other.attempt == attempt)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.opener, opener) || other.opener == opener));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorChecking&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.attempt, attempt) || other.attempt == attempt)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText,topic,attempt,problemId,opener);
+int get hashCode => Object.hash(runtimeType,problemText,topic,attempt,problemId,opener,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId, opener: $opener)';
+  return 'TutorState.checking(problemText: $problemText, topic: $topic, attempt: $attempt, problemId: $problemId, opener: $opener, isHintLoading: $isHintLoading)';
 }
 
 
@@ -408,9 +478,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $TutorCheckingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
   factory $TutorCheckingCopyWith(TutorChecking value, $Res Function(TutorChecking) _then) = _$TutorCheckingCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String problemText, Topic topic, String attempt, String problemId, String opener
+ String problemText, Topic topic, String attempt, String problemId, String opener, bool isHintLoading
 });
 
 
@@ -427,14 +497,15 @@ class _$TutorCheckingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? attempt = null,Object? problemId = null,Object? opener = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? attempt = null,Object? problemId = null,Object? opener = null,Object? isHintLoading = null,}) {
   return _then(TutorChecking(
 problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
 as Topic,attempt: null == attempt ? _self.attempt : attempt // ignore: cast_nullable_to_non_nullable
 as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
 as String,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
-as String,
+as String,isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -445,7 +516,7 @@ as String,
 
 
 class TutorHinting implements TutorState {
-  const TutorHinting({required this.problemText, required this.topic, required this.level, required this.hint, required this.problemId, required this.firstHintAt, required this.opener});
+  const TutorHinting({required this.problemText, required this.topic, required this.level, required this.hint, required this.problemId, required this.firstHintAt, required this.opener, this.isHintLoading = false});
   
 
  final  String problemText;
@@ -456,10 +527,11 @@ class TutorHinting implements TutorState {
  final  DateTime firstHintAt;
 // Opener carried through for consistent conversation display.
  final  String opener;
+@override@JsonKey() final  bool isHintLoading;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TutorHintingCopyWith<TutorHinting> get copyWith => _$TutorHintingCopyWithImpl<TutorHinting>(this, _$identity);
 
@@ -467,16 +539,16 @@ $TutorHintingCopyWith<TutorHinting> get copyWith => _$TutorHintingCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorHinting&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.level, level) || other.level == level)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.firstHintAt, firstHintAt) || other.firstHintAt == firstHintAt)&&(identical(other.opener, opener) || other.opener == opener));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorHinting&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.level, level) || other.level == level)&&(identical(other.hint, hint) || other.hint == hint)&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.firstHintAt, firstHintAt) || other.firstHintAt == firstHintAt)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemText,topic,level,hint,problemId,firstHintAt,opener);
+int get hashCode => Object.hash(runtimeType,problemText,topic,level,hint,problemId,firstHintAt,opener,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt, opener: $opener)';
+  return 'TutorState.hinting(problemText: $problemText, topic: $topic, level: $level, hint: $hint, problemId: $problemId, firstHintAt: $firstHintAt, opener: $opener, isHintLoading: $isHintLoading)';
 }
 
 
@@ -485,9 +557,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $TutorHintingCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
   factory $TutorHintingCopyWith(TutorHinting value, $Res Function(TutorHinting) _then) = _$TutorHintingCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String problemText, Topic topic, int level, String hint, String problemId, DateTime firstHintAt, String opener
+ String problemText, Topic topic, int level, String hint, String problemId, DateTime firstHintAt, String opener, bool isHintLoading
 });
 
 
@@ -504,7 +576,7 @@ class _$TutorHintingCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? level = null,Object? hint = null,Object? problemId = null,Object? firstHintAt = null,Object? opener = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? problemText = null,Object? topic = null,Object? level = null,Object? hint = null,Object? problemId = null,Object? firstHintAt = null,Object? opener = null,Object? isHintLoading = null,}) {
   return _then(TutorHinting(
 problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
@@ -513,7 +585,8 @@ as int,hint: null == hint ? _self.hint : hint // ignore: cast_nullable_to_non_nu
 as String,problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
 as String,firstHintAt: null == firstHintAt ? _self.firstHintAt : firstHintAt // ignore: cast_nullable_to_non_nullable
 as DateTime,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
-as String,
+as String,isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -524,7 +597,7 @@ as String,
 
 
 class TutorSolved implements TutorState {
-  const TutorSolved({required this.problemId, required this.problemText, required this.topic, required this.opener});
+  const TutorSolved({required this.problemId, required this.problemText, required this.topic, required this.opener, this.isHintLoading = false});
   
 
  final  String problemId;
@@ -535,10 +608,11 @@ class TutorSolved implements TutorState {
  final  String problemText;
  final  Topic topic;
  final  String opener;
+@override@JsonKey() final  bool isHintLoading;
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 $TutorSolvedCopyWith<TutorSolved> get copyWith => _$TutorSolvedCopyWithImpl<TutorSolved>(this, _$identity);
 
@@ -546,16 +620,16 @@ $TutorSolvedCopyWith<TutorSolved> get copyWith => _$TutorSolvedCopyWithImpl<Tuto
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorSolved&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TutorSolved&&(identical(other.problemId, problemId) || other.problemId == problemId)&&(identical(other.problemText, problemText) || other.problemText == problemText)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.opener, opener) || other.opener == opener)&&(identical(other.isHintLoading, isHintLoading) || other.isHintLoading == isHintLoading));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,problemId,problemText,topic,opener);
+int get hashCode => Object.hash(runtimeType,problemId,problemText,topic,opener,isHintLoading);
 
 @override
 String toString() {
-  return 'TutorState.solved(problemId: $problemId, problemText: $problemText, topic: $topic, opener: $opener)';
+  return 'TutorState.solved(problemId: $problemId, problemText: $problemText, topic: $topic, opener: $opener, isHintLoading: $isHintLoading)';
 }
 
 
@@ -564,9 +638,9 @@ String toString() {
 /// @nodoc
 abstract mixin class $TutorSolvedCopyWith<$Res> implements $TutorStateCopyWith<$Res> {
   factory $TutorSolvedCopyWith(TutorSolved value, $Res Function(TutorSolved) _then) = _$TutorSolvedCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
- String problemId, String problemText, Topic topic, String opener
+ String problemId, String problemText, Topic topic, String opener, bool isHintLoading
 });
 
 
@@ -583,13 +657,14 @@ class _$TutorSolvedCopyWithImpl<$Res>
 
 /// Create a copy of TutorState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? problemId = null,Object? problemText = null,Object? topic = null,Object? opener = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? problemId = null,Object? problemText = null,Object? topic = null,Object? opener = null,Object? isHintLoading = null,}) {
   return _then(TutorSolved(
 problemId: null == problemId ? _self.problemId : problemId // ignore: cast_nullable_to_non_nullable
 as String,problemText: null == problemText ? _self.problemText : problemText // ignore: cast_nullable_to_non_nullable
 as String,topic: null == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
 as Topic,opener: null == opener ? _self.opener : opener // ignore: cast_nullable_to_non_nullable
-as String,
+as String,isHintLoading: null == isHintLoading ? _self.isHintLoading : isHintLoading // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

@@ -4,16 +4,23 @@ import '../../core/typography.dart';
 import 'language_toggle.dart';
 import 'tags.dart';
 
-/// Home variant: दक्ष logo left, streak + avatar right.
+/// Home variant: दक्ष logo left, streak + settings + avatar right.
 class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
   const HomeTopBar({
     super.key,
     required this.streakDays,
     this.onAvatarTap,
+    this.onSettingsTap,
+    this.streakKey,
   });
 
   final int streakDays;
   final VoidCallback? onAvatarTap;
+  final VoidCallback? onSettingsTap;
+
+  /// Optional anchor key used by the first-launch onboarding tour to
+  /// spotlight the streak indicator. Null in tests / non-onboarding flows.
+  final GlobalKey? streakKey;
 
   @override
   Size get preferredSize => const Size.fromHeight(DT.topBarH);
@@ -36,9 +43,21 @@ class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           Text(
             '🔥$streakDays',
+            key: streakKey,
             style: DakshaTypography.sm.copyWith(color: DT.muted),
           ),
           const SizedBox(width: DT.sm),
+          GestureDetector(
+            onTap: onSettingsTap,
+            child: const SizedBox(
+              width: DT.minTouch,
+              height: DT.minTouch,
+              child: Center(
+                child: Icon(Icons.settings_outlined,
+                    size: 22, color: DT.muted),
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: onAvatarTap,
             child: Container(

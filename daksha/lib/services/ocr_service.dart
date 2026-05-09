@@ -15,9 +15,11 @@ abstract class TextRecognitionEngine {
   Future<void> close();
 }
 
-/// Production implementation backed by ML Kit Latin-script text recognition.
+/// Production implementation backed by ML Kit text recognition.
 ///
-/// The underlying model is bundled in the APK via the
+/// Runs both the Latin and Devanagari script recognizers in parallel so the
+/// app can read English and Hindi printed problems with no UI-level switch.
+/// Each script-specific model is bundled in the APK via the
 /// `com.google.mlkit.vision.DEPENDENCIES` meta-data in AndroidManifest.xml,
 /// so no network access is required at runtime.
 ///
@@ -26,15 +28,58 @@ abstract class TextRecognitionEngine {
 /// first), not in top-to-bottom reading order.  We re-sort by bounding-box
 /// top-Y (then left-X for blocks on the same visual row) before joining lines,
 /// so questions always appear before answers and headers appear before body text.
+///
+/// ## Malayalam (and other Indic scripts beyond Devanagari)
+// TODO(vision): ML Kit ships no Malayalam script pack — Latin + Devanagari are
+// the only options here. The strategically clean fix for Malayalam (and a
+// quality boost for printed math generally) is the Gemma multimodal vision
+// path: see [MediaPipeEngine.supportsVision] in
+// `lib/inference/mediapipe_engine.dart:36`, currently forced to `false`
+// pending a `flutter_gemma` release newer than 0.14.5. Once that ships, flip
+// `supportsVision => true` and [OcrService.extractProblemText] will route
+// images directly to the LLM, bypassing ML Kit entirely.
 class MlKitTextRecognitionEngine implements TextRecognitionEngine {
-  final TextRecognizer _recognizer =
+  final TextRecognizer _latinRecognizer =
       TextRecognizer(script: TextRecognitionScript.latin);
+  final TextRecognizer _devanagariRecognizer =
+      // Note: the upstream enum value is misspelled `devanagiri` (sic) in
+      // google_mlkit_text_recognition. It still selects the Devanagari model.
+      TextRecognizer(script: TextRecognitionScript.devanagiri);
 
   @override
   Future<String?> recognizeText(String imagePath) async {
     final inputImage = InputImage.fromFilePath(imagePath);
-    final result = await _recognizer.processImage(inputImage);
 
+    // Run both recognizers in parallel — each loads a separate on-device
+    // model, so they can process the same image concurrently.
+    final results = await Future.wait([
+      _latinRecognizer.processImage(inputImage),
+      _devanagariRecognizer.processImage(inputImage),
+    ]);
+    final latinResult = results[0];
+    final devanagariResult = results[1];
+
+    // Merge strategy: pick the recognizer with more total characters of
+    // output. A typed Devanagari problem will dominate the Devanagari
+    // recognizer; a Latin problem will dominate the Latin recognizer.
+    // Concatenating both produces garbage when the same glyphs are partially
+    // recognised by both models, so we choose one wholesale.
+    final latinText = _reconstructReadingOrder(latinResult);
+    final devanagariText = _reconstructReadingOrder(devanagariResult);
+
+    if (latinText == null && devanagariText == null) return null;
+    if (latinText == null) return devanagariText;
+    if (devanagariText == null) return latinText;
+
+    return devanagariText.length > latinText.length
+        ? devanagariText
+        : latinText;
+  }
+
+  /// Sort [result]'s blocks into reading order (top-to-bottom, then
+  /// left-to-right for blocks on the same visual row) and join their lines
+  /// with newlines. Returns null when no non-empty lines are present.
+  String? _reconstructReadingOrder(RecognizedText result) {
     if (result.blocks.isEmpty) return null;
 
     // Sort blocks into reading order: top-to-bottom, then left-to-right
@@ -65,7 +110,12 @@ class MlKitTextRecognitionEngine implements TextRecognitionEngine {
   }
 
   @override
-  Future<void> close() => _recognizer.close();
+  Future<void> close() async {
+    await Future.wait([
+      _latinRecognizer.close(),
+      _devanagariRecognizer.close(),
+    ]);
+  }
 }
 
 // ── OcrService ────────────────────────────────────────────────────────────────

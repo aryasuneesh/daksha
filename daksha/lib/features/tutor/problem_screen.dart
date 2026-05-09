@@ -264,9 +264,12 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
               child: HintLevelDots(level: tutorState.level),
             ),
           Center(
-            child: DakshaTextButton(
-              label: '💡 Need a hint',
-              onPressed: _canRequestHint(tutorState) ? _onHint : null,
+            child: _HintButton(
+              isLoading: _isHintLoading(tutorState),
+              onPressed: (_canRequestHint(tutorState) &&
+                      !_isHintLoading(tutorState))
+                  ? _onHint
+                  : null,
             ),
           ),
           _buildInputRow(canInput),
@@ -292,6 +295,17 @@ class _ProblemScreenState extends ConsumerState<ProblemScreen> {
 
   bool _canRequestHint(TutorState state) {
     return state is TutorAsking || state is TutorHinting;
+  }
+
+  bool _isHintLoading(TutorState state) {
+    return switch (state) {
+      TutorAsking(:final isHintLoading)   => isHintLoading,
+      TutorHinting(:final isHintLoading)  => isHintLoading,
+      TutorChecking(:final isHintLoading) => isHintLoading,
+      TutorSolved(:final isHintLoading)   => isHintLoading,
+      TutorClassifying(:final isHintLoading) => isHintLoading,
+      TutorIdle(:final isHintLoading)     => isHintLoading,
+    };
   }
 
   /// Shows a modal dialog acknowledging a graded attempt. Fired once per
@@ -450,6 +464,54 @@ class _ChatArea extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+/// "Need a hint" CTA. Renders a 16x16 spinner alongside the label while a
+/// hint request is in flight; [onPressed] is null in that state so the button
+/// is fully disabled and tap-spamming can't queue concurrent inferences.
+/// Spinner styling matches home_screen's _StatusLine for visual consistency.
+class _HintButton extends StatelessWidget {
+  const _HintButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isLoading) {
+      return DakshaTextButton(
+        label: '💡 Need a hint',
+        onPressed: onPressed,
+      );
+    }
+    return TextButton(
+      onPressed: null,
+      style: TextButton.styleFrom(
+        foregroundColor: DT.accent,
+        padding: const EdgeInsets.all(DT.sm),
+        minimumSize: const Size(DT.minTouch, DT.minTouch),
+        textStyle: DakshaTypography.sm.copyWith(fontWeight: FontWeight.w400),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: DT.sm),
+          Text(
+            'Thinking…',
+            style: DakshaTypography.sm.copyWith(color: DT.muted),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'app/app.dart';
+import 'app/locale_provider.dart';
 import 'core/constants/model.dart';
+import 'storage/secure_key_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +47,39 @@ void main() async {
     }
   }
 
-  final needsSetup = !FlutterGemma.hasActiveModel();
+  final hasModel = FlutterGemma.hasActiveModel();
 
-  runApp(ProviderScope(child: DakshaApp(needsSetup: needsSetup)));
+  // Read the persisted locale BEFORE building MaterialApp so the first frame
+  // renders in the correct language (no flash of English on Hindi/Malayalam
+  // installs). MaterialApp needs `locale:` at construction; we cannot defer
+  // this to an async provider without a flicker.
+  final storage = FlutterSecureStorageAdapter();
+  final initialLocale = await readPersistedLocale(storage);
+  final initialOnboardingComplete =
+      await readPersistedOnboardingComplete(storage);
+
+  // Three startup states the router cares about:
+  //   1. no model      → /setup            (download)
+  //   2. model + no locale → /setup/language (first-launch picker)
+  //   3. model + locale    → /                (normal home)
+  final String startLocation;
+  if (!hasModel) {
+    startLocation = '/setup';
+  } else if (initialLocale == null) {
+    startLocation = '/setup/language';
+  } else {
+    startLocation = '/';
+  }
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        initialLocaleProvider.overrideWithValue(initialLocale),
+        initialOnboardingCompleteProvider
+            .overrideWithValue(initialOnboardingComplete),
+        localeStorageProvider.overrideWithValue(storage),
+      ],
+      child: DakshaApp(initialLocation: startLocation),
+    ),
+  );
 }
